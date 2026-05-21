@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UDAF 47 — Centre d'assistance</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+/* ── Variables ── */
+:root {
+  --blue:    #011973;
+  --blue2:   rgba(1,25,115,.08);
+  --orange:  #FE4329;
+  --orange2: rgba(254,67,41,.1);
+  --bg:      #f4f6fb;
+  --white:   #ffffff;
+  --shadow:  0 4px 18px rgba(1,25,115,.09);
+  --radius:  10px;
+  --text:    rgba(1,25,115,.85);
+}
+
+/* ── Reset minimal ── */
+*,*::before,*::after { box-sizing: border-box; }
+body { margin:0; font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; background:var(--bg); color:var(--text); font-size:15px; line-height:1.5; }
+a { color:var(--blue); text-decoration:none; }
+a:hover { color:var(--orange); }
+h1,h2,h3,h4 { margin:0; }
+
+/* ── Header ── */
+#header {
+  background:var(--blue);
+  border-bottom:3px solid var(--orange);
+  padding:10px 32px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  box-shadow:0 3px 16px rgba(1,25,115,.18);
+}
+.header-left { display:flex; align-items:center; gap:16px; }
+.header-logo { display:flex; align-items:center; gap:10px; color:#fff; font-size:1.1rem; font-weight:700; }
+.header-logo .logo-icon {
+  width:48px; height:48px; border-radius:8px;
+  background:var(--orange); display:flex; align-items:center; justify-content:center;
+  font-size:1.5rem; color:#fff;
+}
+.header-logo .logo-name { line-height:1.2; }
+.header-logo .logo-name small { display:block; font-size:.72rem; font-weight:400; opacity:.8; }
+.header-title { color:rgba(255,255,255,.9); font-size:1rem; font-weight:500; border-left:2px solid rgba(255,255,255,.2); padding-left:16px; }
+
+/* ── Nav in header ── */
+.header-nav { display:flex; gap:4px; }
+.header-nav a {
+  color:rgba(255,255,255,.8);
+  font-size:.9rem;
+  padding:6px 14px;
+  border-radius:6px;
+  transition:background .15s,color .15s;
+}
+.header-nav a:hover, .header-nav a.active {
+  background:rgba(254,67,41,.18);
+  color:#fff;
+}
+.header-nav a.active { font-weight:600; }
+.header-user { color:rgba(255,255,255,.7); font-size:.85rem; }
+.header-user a { color:rgba(255,255,255,.85); padding:4px 8px; background:rgba(255,255,255,.1); border-radius:4px; }
+.header-user a:hover { background:rgba(254,67,41,.3); color:#fff; }
+
+/* ── Conteneur ── */
+#container { max-width:1100px; margin:0 auto; padding:0 20px; }
+
+/* ── Hero / Search ── */
+.hero { text-align:center; padding:48px 20px 36px; }
+.hero h1 { font-size:1.8rem; color:var(--blue); font-weight:700; margin-bottom:10px; }
+.hero p { color:rgba(1,25,115,.6); font-size:1rem; max-width:520px; margin:0 auto 28px; }
+.search-form { display:flex; max-width:520px; margin:0 auto; box-shadow:var(--shadow); border-radius:50px; overflow:hidden; }
+.search-form input {
+  flex:1; border:none; outline:none; padding:14px 20px;
+  font-size:.95rem; color:var(--text); background:var(--white);
+}
+.search-form button {
+  background:var(--orange); color:#fff; border:none; cursor:pointer;
+  padding:0 22px; font-size:.9rem; font-weight:600;
+  transition:background .18s;
+}
+.search-form button:hover { background:#e63620; }
+
+/* ── Cards ── */
+.cards-section { padding:32px 0 24px; }
+.cards-section h2 { font-size:1rem; font-weight:700; color:rgba(1,25,115,.45); text-transform:uppercase; letter-spacing:.5px; margin-bottom:20px; }
+.cards-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+.card {
+  background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:28px 24px; transition:transform .18s,box-shadow .18s;
+  border-top:3px solid transparent;
+}
+.card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(1,25,115,.13); border-top-color:var(--orange); }
+.card a { display:flex; flex-direction:column; align-items:flex-start; gap:12px; color:inherit; }
+.card a:hover { color:inherit; }
+.card-icon {
+  width:52px; height:52px; border-radius:12px;
+  background:var(--orange2); color:var(--orange);
+  display:flex; align-items:center; justify-content:center; font-size:1.4rem;
+}
+.card:nth-child(2) .card-icon { background:var(--blue2); color:var(--blue); }
+.card:nth-child(3) .card-icon { background:rgba(16,185,129,.1); color:#059669; }
+.card h3 { font-size:1rem; font-weight:700; color:var(--blue); margin-bottom:4px; }
+.card p { font-size:.85rem; color:rgba(1,25,115,.55); margin:0; }
+
+/* ── How it works ── */
+.how-section { padding:32px 0 48px; }
+.how-section h2 { font-size:1rem; font-weight:700; color:rgba(1,25,115,.45); text-transform:uppercase; letter-spacing:.5px; margin-bottom:24px; }
+.how-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px; }
+.how-step { text-align:center; padding:24px 16px; }
+.how-icon {
+  width:60px; height:60px; border-radius:50%;
+  background:var(--blue2); color:var(--blue);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.4rem; margin:0 auto 16px;
+}
+.how-step h4 { font-size:.95rem; font-weight:700; color:var(--blue); margin-bottom:8px; }
+.how-step p { font-size:.85rem; color:rgba(1,25,115,.55); margin:0; }
+.how-connector { display:flex; align-items:center; justify-content:center; padding-top:20px; color:rgba(1,25,115,.2); font-size:1.5rem; }
+
+/* ── Footer ── */
+#footer {
+  background:var(--blue); color:rgba(255,255,255,.6);
+  padding:20px 32px; font-size:.8rem;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-top:auto;
+}
+#footer a { color:rgba(255,255,255,.8); }
+#footer strong { color:#fff; }
+.version-tag {
+  display:inline-block; background:rgba(254,67,41,.18); color:var(--orange);
+  font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:50px; margin-left:8px;
+}
+
+/* ── Responsive ── */
+@media(max-width:640px) {
+  #header { flex-direction:column; align-items:flex-start; padding:12px 16px; }
+  .header-nav { flex-wrap:wrap; }
+  .hero h1 { font-size:1.4rem; }
+  #footer { flex-direction:column; gap:8px; text-align:center; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="header">
+  <div class="header-left">
+    <div class="header-logo">
+      <div class="logo-icon"><i class="fa fa-life-ring"></i></div>
+      <div class="logo-name">
+        UDAF 47
+        <small>Centre d'assistance</small>
+      </div>
+    </div>
+    <span class="header-title">Portail utilisateur</span>
+  </div>
+  <nav class="header-nav">
+    <a href="index.html" class="active"><i class="fa fa-home"></i> Accueil</a>
+    <a href="open.html"><i class="fa fa-ticket"></i> Nouveau ticket</a>
+    <a href="#"><i class="fa fa-list-alt"></i> Mes tickets</a>
+    <a href="#"><i class="fa fa-book"></i> FAQ</a>
+  </nav>
+  <div class="header-user">
+    <a href="#"><i class="fa fa-sign-in"></i> Se connecter</a>
+  </div>
+</header>
+
+<div id="container">
+
+  <!-- HERO + SEARCH -->
+  <section class="hero">
+    <h1>Comment pouvons-nous vous aider ?</h1>
+    <p>Bienvenue sur le centre d'assistance de l'UDAF 47. Ouvrez un ticket ou consultez nos articles.</p>
+    <form class="search-form" action="#" method="get">
+      <input type="text" name="q" placeholder="Rechercher dans la base de connaissances…" autocomplete="off">
+      <button type="submit"><i class="fa fa-search"></i> Rechercher</button>
+    </form>
+  </section>
+
+  <!-- CARDS -->
+  <section class="cards-section">
+    <h2>Actions rapides</h2>
+    <div class="cards-grid">
+      <div class="card">
+        <a href="open.html">
+          <div class="card-icon"><i class="fa fa-ticket"></i></div>
+          <div>
+            <h3>Ouvrir un nouveau ticket</h3>
+            <p>Déposer une demande d'assistance à notre équipe.</p>
+          </div>
+        </a>
+      </div>
+      <div class="card">
+        <a href="#">
+          <div class="card-icon"><i class="fa fa-book"></i></div>
+          <div>
+            <h3>Base de connaissances</h3>
+            <p>Parcourir les articles et les questions fréquentes.</p>
+          </div>
+        </a>
+      </div>
+      <div class="card">
+        <a href="#">
+          <div class="card-icon"><i class="fa fa-list-alt"></i></div>
+          <div>
+            <h3>Mes tickets</h3>
+            <p>Consulter et suivre vos demandes en cours.</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section">
+    <h2>Comment ça marche</h2>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-icon"><i class="fa fa-pencil"></i></div>
+        <h4>1. Décrivez votre problème</h4>
+        <p>Ouvrez un ticket et décrivez votre demande en détail, avec les fichiers nécessaires.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-icon"><i class="fa fa-envelope"></i></div>
+        <h4>2. Recevez une confirmation</h4>
+        <p>Un email avec votre numéro de ticket vous est envoyé immédiatement.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-icon"><i class="fa fa-check-circle"></i></div>
+        <h4>3. Suivez la résolution</h4>
+        <p>Notre équipe traite votre demande et vous tient informé à chaque étape.</p>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /container -->
+
+<footer id="footer">
+  <div>
+    <strong>UDAF 47</strong> — Centre d'assistance informatique
+    <span class="version-tag">v 0.4</span>
+  </div>
+  <div>Propulsé par <a href="#">osTicket</a></div>
+</footer>
+
+</body>
+</html>
