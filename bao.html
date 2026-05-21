@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La boîte à outil de l'UDAF de Lot et Garonne</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f9fbfd;
+            color: rgba(1, 25, 115, 1);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* En-tête moderne */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 40px;
+            background: linear-gradient(135deg, rgba(254, 67, 41, 0.1), rgba(1, 25, 115, 0.1));
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo-container img {
+            max-width: 160px;
+        }
+
+        .title-container {
+            text-align: center;
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            color: rgba(1, 25, 115, 1);
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: rgba(254, 67, 41, 1);
+        }
+
+        .hero-image-container img {
+            max-width: 90px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Contenu principal */
+        .main-content {
+            padding: 40px 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            flex: 1;
+            width: 100%;
+        }
+
+        .section-title h2 {
+            font-size: 1.8rem;
+            color: rgba(1, 25, 115, 1);
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        /* Grille de cartes */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            padding: 0 10px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+            transition: transform 0.35s ease, box-shadow 0.35s ease;
+            text-align: center;
+            border-top: 5px solid rgba(254, 67, 41, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 14px 28px rgba(0,0,0,0.18);
+        }
+        
+        .card-link {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            text-decoration: none;
+            color: inherit;
+            padding: 30px 20px;
+        }
+        
+        .card-icon {
+            background: rgba(254, 67, 41, 0.12);
+            padding: 25px;
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: rgba(1, 25, 115, 1);
+            font-size: 2.2rem;
+        }
+        
+        .card-body h3 {
+            font-size: 1.35rem;
+            margin-bottom: 12px;
+            color: rgba(1, 25, 115, 1);
+        }
+        
+        .card-body p {
+            color: #555;
+            font-size: 0.98rem;
+            line-height: 1.5;
+        }
+
+        /* Pied de page */
+        .footer {
+            background: rgba(1, 25, 115, 1);
+            color: white;
+            text-align: center;
+            padding: 25px;
+            margin-top: auto;
+        }
+        
+        .footer a {
+            color: rgba(254, 67, 41, 1);
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<!-- En-tête moderne -->
+<header class="header">
+    <div class="logo-container">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRnri7JhCAH5mfLjbUMInmRbhSPIqikCYKS-g&s" alt="Logo UDAF Lot et Garonne" class="logo-img">
+    </div>
+    <div class="title-container">
+        <h1 class="main-title">Boîte à Outils</h1>
+        <p class="subtitle">Accédez à tous les outils dont vous avez besoin</p>
+    </div>
+    <div class="hero-image-container">
+        <img src="https://e1.pngegg.com/pngimages/294/406/png-clipart-icone-de-la-boite-a-outils-icone-de-la-boite-a-outils-icone-de-la-science-et-de-la-technologie-icone-d-outils-et-d-ustensiles-bleu-bleu-electrique-texte-logo-thumbnail.png" alt="Boîte à outils" class="hero-img">
+    </div>
+</header>
+
+<!-- Contenu principal -->
+<main class="main-content">
+
+    <div class="card-grid">
+        <!-- Carte 1 : OUTILS PJM -->
+        <div class="card">
+            <a target="_blank" href="http://udaf47.lan/boiteaoutils/Testbis.php" class="card-link">
+                <div class="card-icon">
+                    <i class="fas fa-shield-alt fa-2x"></i>
+                </div>
+                <div class="card-body">
+                    <h3>OUTILS PJM</h3>
+                    <p>Gestion de la protection des majeurs</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Carte 2 : OUTILS DPF -->
+        <div class="card">
+            <a target="_blank" href="http://udaf47.lan/boiteaoutils/indexDPF.php" class="card-link">
+                <div class="card-icon">
+                    <i class="fas fa-user-shield fa-2x"></i>
+                </div>
+                <div class="card-body">
+                    <h3>OUTILS DPF</h3>
+                    <p>Droits des personnes fragiles</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Carte 3 : GESTION ÉVÉNEMENTS -->
+        <div class="card">
+            <a target="_blank" href="http://udaf47.lan/gde/index.php" class="card-link">
+                <div class="card-icon">
+                    <i class="fas fa-calendar-check fa-2x"></i>
+                </div>
+                <div class="card-body">
+                    <h3>GESTION ÉVÉNEMENTS</h3>
+                    <p>Organisez et suivez vos événements</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Carte 4 : COMPTA TUTELLE -->
+        <div class="card">
+            <a target="_blank" href="file:///C:/Users/p_schwambach_admin/OneDrive%20-%20UDAF%2047/Bureau/Code/code%20bao%20pjm/outils%20controle.html" class="card-link">
+                <div class="card-icon">
+                    <i class="fas fa-piggy-bank fa-2x"></i>
+                </div>
+                <div class="card-body">
+                    <h3>COMPTA TUTELLE</h3>
+                    <p>Suivi des placements financiers</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Carte 5 : RÉSERVATION VÉHICULE -->
+        <div class="card">
+            <a target="_blank" href="http://udaf47.lan/boiteaoutils/reservation_vehicule.php" class="card-link">
+                <div class="card-icon">
+                    <i class="fas fa-car fa-2x"></i>
+                </div>
+                <div class="card-body">
+                    <h3>RÉSERVATION VÉHICULE</h3>
+                    <p>Réservez un véhicule de service</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Carte 6 : PROBLÈME INFORMATIQUE -->
+        <div class="card">
+            <a target="_blank" href="file:///C:/Users/p_schwambach_admin/OneDrive%20-%20UDAF%2047/Bureau/Code/ticketing.html" class="card-link">
+                <div class="card-icon">
+                    <i class="fas fa-laptop-medical fa-2x"></i>
+                </div>
+                <div class="card-body">
+                    <h3>PROBLÈME INFORMATIQUE</h3>
+                    <p>Signalez une panne ou une anomalie</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Carte 7 : KELIO -->
+        <div class="card">
+            <a target="_blank" href="http://192.168.47.24:8089" class="card-link">
+                <div class="card-icon">
+                    <i class="fas fa-clock fa-2x"></i>
+                </div>
+                <div class="card-body">
+                    <h3>KELIO</h3>
+                    <p>Gestion du temps de travail</p>
+                </div>
+            </a>
+        </div>
+
+
+        <!-- Carte 9 : ANNUAIRE SALARIÉS -->
+        <div class="card">
+            <a target="_blank" href="http://udaf47.lan/upload/RH_PJM/ADP.xlsx" class="card-link">
+                <div class="card-icon">
+                    <i class="fas fa-address-book fa-2x"></i>
+                </div>
+                <div class="card-body">
+                    <h3>ANNUAIRE SALARIÉS</h3>
+                    <p>Retrouvez les contacts internes</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Carte 10 : NOUVEAU SALARIÉ -->
+        <div class="card">
+            <a target="_blank" href="https://forms.office.com/r/jDXicMPTsd" class="card-link">
+                <div class="card-icon">
+                    <i class="fas fa-user-plus fa-2x"></i>
+                </div>
+                <div class="card-body">
+                    <h3>NOUVEAU SALARIÉ</h3>
+                    <p>Inscription et intégration</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</main>
+
+<!-- Pied de page -->
+<footer class="footer">
+    <p>© 2026 UDAF Lot et Garonne — Tous droits réservés</p>
+   <a href="https://outlook.live.com/mail/0/deeplink/compose?to=p.schwambach@udaf47.fr" target="_blank">
+    <i class="fas fa-envelope"></i> Contact Paolo
+</a>
+</footer>
+</body>
+</html>
