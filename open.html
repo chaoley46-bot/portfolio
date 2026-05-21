@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UDAF 47 — Ouvrir un ticket</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+/* ── Variables ── */
+:root {
+  --blue:    #011973;
+  --blue2:   rgba(1,25,115,.08);
+  --orange:  #FE4329;
+  --orange2: rgba(254,67,41,.1);
+  --bg:      #f4f6fb;
+  --white:   #ffffff;
+  --shadow:  0 4px 18px rgba(1,25,115,.09);
+  --radius:  10px;
+  --text:    rgba(1,25,115,.85);
+  --border:  rgba(1,25,115,.15);
+  --input-bg:#fafbff;
+}
+
+/* ── Reset minimal ── */
+*,*::before,*::after { box-sizing:border-box; }
+body { margin:0; font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; background:var(--bg); color:var(--text); font-size:15px; line-height:1.5; }
+a { color:var(--blue); text-decoration:none; }
+a:hover { color:var(--orange); }
+h1,h2,h3,h4 { margin:0; }
+
+/* ── Header ── */
+#header {
+  background:var(--blue);
+  border-bottom:3px solid var(--orange);
+  padding:10px 32px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  box-shadow:0 3px 16px rgba(1,25,115,.18);
+}
+.header-left { display:flex; align-items:center; gap:16px; }
+.header-logo { display:flex; align-items:center; gap:10px; color:#fff; font-size:1.1rem; font-weight:700; }
+.header-logo .logo-icon {
+  width:48px; height:48px; border-radius:8px;
+  background:var(--orange); display:flex; align-items:center; justify-content:center;
+  font-size:1.5rem; color:#fff;
+}
+.header-logo .logo-name { line-height:1.2; }
+.header-logo .logo-name small { display:block; font-size:.72rem; font-weight:400; opacity:.8; }
+.header-title { color:rgba(255,255,255,.9); font-size:1rem; font-weight:500; border-left:2px solid rgba(255,255,255,.2); padding-left:16px; }
+.header-nav { display:flex; gap:4px; }
+.header-nav a {
+  color:rgba(255,255,255,.8); font-size:.9rem; padding:6px 14px;
+  border-radius:6px; transition:background .15s,color .15s;
+}
+.header-nav a:hover, .header-nav a.active { background:rgba(254,67,41,.18); color:#fff; }
+.header-nav a.active { font-weight:600; }
+.header-user { color:rgba(255,255,255,.7); font-size:.85rem; }
+.header-user a { color:rgba(255,255,255,.85); padding:4px 8px; background:rgba(255,255,255,.1); border-radius:4px; }
+.header-user a:hover { background:rgba(254,67,41,.3); color:#fff; }
+
+/* ── Conteneur ── */
+#container { max-width:860px; margin:0 auto; padding:36px 20px 60px; }
+
+/* ── Form card ── */
+.form-card {
+  background:var(--white); border-radius:var(--radius);
+  box-shadow:var(--shadow); overflow:hidden;
+}
+.form-header {
+  background:linear-gradient(135deg,var(--blue) 0%,#0a2fa8 100%);
+  padding:28px 32px; display:flex; align-items:center; gap:16px;
+  border-bottom:3px solid var(--orange);
+}
+.form-header-icon {
+  width:52px; height:52px; border-radius:12px;
+  background:rgba(254,67,41,.2); color:var(--orange);
+  display:flex; align-items:center; justify-content:center; font-size:1.5rem;
+  flex-shrink:0;
+}
+.form-header h2 { font-size:1.2rem; font-weight:700; color:#fff; margin-bottom:4px; }
+.form-header p { font-size:.85rem; color:rgba(255,255,255,.7); margin:0; }
+.back-btn {
+  margin-left:auto; display:flex; align-items:center; gap:6px;
+  color:rgba(255,255,255,.7); font-size:.85rem; padding:6px 12px;
+  background:rgba(255,255,255,.1); border-radius:6px; flex-shrink:0;
+}
+.back-btn:hover { background:rgba(255,255,255,.18); color:#fff; }
+
+/* ── Form body ── */
+.form-body { padding:32px; }
+
+/* ── Sections ── */
+.form-section { margin-bottom:28px; }
+.form-section-title {
+  font-size:.78rem; font-weight:700; color:rgba(1,25,115,.45);
+  text-transform:uppercase; letter-spacing:.6px;
+  border-bottom:1px solid var(--blue2); padding-bottom:8px; margin-bottom:20px;
+}
+
+/* ── Grid ── */
+.grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.grid-1 { display:grid; grid-template-columns:1fr; gap:16px; }
+.col-span-2 { grid-column:span 2; }
+.col-span-3 { grid-column:span 3; }
+
+/* ── Fields ── */
+.field { display:flex; flex-direction:column; gap:5px; }
+.field label {
+  font-size:.82rem; font-weight:600; color:rgba(1,25,115,.7);
+}
+.field label .req { color:var(--orange); margin-left:2px; }
+.field input,
+.field select,
+.field textarea {
+  border:1px solid var(--border); border-radius:6px;
+  padding:9px 12px; font-size:.9rem; color:var(--text);
+  background:var(--input-bg); transition:border-color .2s,box-shadow .2s;
+  font-family:inherit; width:100%;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline:none; border-color:var(--orange);
+  box-shadow:0 0 0 3px rgba(254,67,41,.12);
+}
+.field textarea { resize:vertical; min-height:130px; }
+.field select { cursor:pointer; }
+.field .hint { font-size:.78rem; color:rgba(1,25,115,.45); margin-top:2px; }
+
+/* ── Priority pills ── */
+.priority-group { display:flex; gap:10px; flex-wrap:wrap; }
+.priority-pill input[type="radio"] { position:absolute; opacity:0; width:0; }
+.priority-pill label {
+  display:flex; align-items:center; gap:6px;
+  padding:7px 14px; border-radius:50px; cursor:pointer;
+  border:1.5px solid var(--border); font-size:.82rem; font-weight:600;
+  transition:border-color .15s,background .15s,color .15s;
+  background:var(--white); color:rgba(1,25,115,.6);
+}
+.priority-pill input:checked + label { border-color:var(--blue); background:var(--blue2); color:var(--blue); }
+.priority-pill label .dot { width:8px; height:8px; border-radius:50%; }
+.dot-low  { background:#22c55e; }
+.dot-med  { background:#f59e0b; }
+.dot-high { background:var(--orange); }
+.dot-crit { background:#dc2626; }
+.priority-pill input[data-p="critical"]:checked + label { border-color:#dc2626; background:rgba(220,38,38,.06); color:#dc2626; }
+.priority-pill input[data-p="high"]:checked + label    { border-color:var(--orange); background:var(--orange2); color:var(--orange); }
+.priority-pill input[data-p="normal"]:checked + label  { border-color:#f59e0b; background:rgba(245,158,11,.08); color:#b45309; }
+.priority-pill input[data-p="low"]:checked + label     { border-color:#16a34a; background:rgba(22,163,74,.06); color:#16a34a; }
+
+/* ── File drop ── */
+.file-drop {
+  border:2px dashed var(--border); border-radius:8px; padding:20px;
+  text-align:center; cursor:pointer; transition:border-color .2s,background .2s;
+  background:var(--input-bg);
+}
+.file-drop:hover { border-color:var(--orange); background:var(--orange2); }
+.file-drop i { font-size:1.8rem; color:rgba(1,25,115,.3); margin-bottom:8px; display:block; }
+.file-drop p { font-size:.82rem; color:rgba(1,25,115,.5); margin:0 0 10px; }
+.file-drop input { display:none; }
+.file-drop-btn {
+  display:inline-block; padding:6px 14px; border-radius:50px;
+  background:var(--blue2); color:var(--blue); font-size:.8rem; font-weight:600; cursor:pointer;
+}
+
+/* ── Actions ── */
+.form-actions { display:flex; align-items:center; gap:12px; margin-top:32px; padding-top:24px; border-top:1px solid var(--blue2); }
+.btn-submit {
+  background:var(--blue); color:#fff; border:none; cursor:pointer;
+  padding:12px 28px; border-radius:50px; font-size:.9rem; font-weight:700;
+  display:flex; align-items:center; gap:8px; transition:background .2s;
+}
+.btn-submit:hover { background:var(--orange); }
+.btn-cancel {
+  color:rgba(1,25,115,.5); font-size:.88rem; padding:8px 14px;
+  border-radius:50px; border:1px solid var(--border); background:transparent;
+  cursor:pointer; transition:border-color .15s,color .15s;
+}
+.btn-cancel:hover { border-color:var(--orange); color:var(--orange); }
+.form-note { margin-left:auto; font-size:.78rem; color:rgba(1,25,115,.4); }
+
+/* ── Success message (masqué par défaut) ── */
+.success-banner {
+  display:none; background:#e8fbe8; border:1px solid #16a34a; border-radius:8px;
+  padding:20px 24px; margin-bottom:24px; color:#166534;
+  flex-direction:column; gap:8px;
+}
+.success-banner.show { display:flex; }
+.success-banner strong { font-size:1rem; }
+.success-banner p { font-size:.88rem; margin:0; }
+
+/* ── Footer ── */
+#footer {
+  background:var(--blue); color:rgba(255,255,255,.6);
+  padding:20px 32px; font-size:.8rem;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-top:auto;
+}
+#footer a { color:rgba(255,255,255,.8); }
+#footer strong { color:#fff; }
+.version-tag { display:inline-block; background:rgba(254,67,41,.18); color:var(--orange); font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:50px; margin-left:8px; }
+
+/* ── Responsive ── */
+@media(max-width:640px) {
+  #header { flex-direction:column; align-items:flex-start; padding:12px 16px; }
+  .header-nav { flex-wrap:wrap; }
+  .grid-3 { grid-template-columns:1fr; }
+  .grid-2 { grid-template-columns:1fr; }
+  .col-span-2,.col-span-3 { grid-column:span 1; }
+  .form-body { padding:20px; }
+  .form-header { padding:20px; flex-wrap:wrap; }
+  .back-btn { margin-left:0; }
+  #footer { flex-direction:column; gap:8px; text-align:center; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="header">
+  <div class="header-left">
+    <div class="header-logo">
+      <div class="logo-icon"><i class="fa fa-life-ring"></i></div>
+      <div class="logo-name">
+        UDAF 47
+        <small>Centre d'assistance</small>
+      </div>
+    </div>
+    <span class="header-title">Portail utilisateur</span>
+  </div>
+  <nav class="header-nav">
+    <a href="index.html"><i class="fa fa-home"></i> Accueil</a>
+    <a href="open.html" class="active"><i class="fa fa-ticket"></i> Nouveau ticket</a>
+    <a href="#"><i class="fa fa-list-alt"></i> Mes tickets</a>
+    <a href="#"><i class="fa fa-book"></i> FAQ</a>
+  </nav>
+  <div class="header-user">
+    <a href="#"><i class="fa fa-sign-in"></i> Se connecter</a>
+  </div>
+</header>
+
+<div id="container">
+
+  <!-- Bannière succès (affichée par JS après soumission) -->
+  <div class="success-banner" id="success-banner">
+    <strong><i class="fa fa-check-circle"></i> &nbsp;Ticket créé avec succès !</strong>
+    <p>Votre demande a bien été enregistrée. Un email de confirmation vous a été envoyé.<br>
+       Numéro de ticket : <strong>#2025-0042</strong></p>
+    <a href="index.html" style="margin-top:6px;font-size:.85rem;color:#166534;font-weight:600;">
+      <i class="fa fa-arrow-left"></i> Retour à l'accueil
+    </a>
+  </div>
+
+  <div class="form-card">
+    <!-- En-tête du formulaire -->
+    <div class="form-header">
+      <div class="form-header-icon"><i class="fa fa-ticket"></i></div>
+      <div>
+        <h2>Ouvrir un nouveau ticket</h2>
+        <p>Remplissez le formulaire ci-dessous pour soumettre votre demande d'assistance.</p>
+      </div>
+      <a href="index.html" class="back-btn"><i class="fa fa-arrow-left"></i> Retour</a>
+    </div>
+
+    <!-- Corps du formulaire -->
+    <div class="form-body">
+      <form id="ticket-form" novalidate>
+
+        <!-- SECTION : Vos coordonnées -->
+        <div class="form-section">
+          <div class="form-section-title"><i class="fa fa-user"></i> &nbsp;Vos coordonnées</div>
+          <div class="grid-3">
+            <div class="field">
+              <label for="name">Nom complet <span class="req">*</span></label>
+              <input type="text" id="name" name="name" placeholder="Prénom Nom" autocomplete="name">
+            </div>
+            <div class="field">
+              <label for="email">Adresse e-mail <span class="req">*</span></label>
+              <input type="email" id="email" name="email" placeholder="vous@exemple.fr" autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="phone">Téléphone</label>
+              <input type="tel" id="phone" name="phone" placeholder="06 00 00 00 00" autocomplete="tel">
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION : Votre demande -->
+        <div class="form-section">
+          <div class="form-section-title"><i class="fa fa-tag"></i> &nbsp;Catégorie &amp; priorité</div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="dept">Département <span class="req">*</span></label>
+              <select id="dept" name="dept">
+                <option value="">— Sélectionner —</option>
+                <option value="support">Support informatique</option>
+                <option value="reseau">Réseau &amp; infrastructure</option>
+                <option value="logiciel">Logiciels &amp; applicatifs</option>
+                <option value="materiel">Matériel &amp; périphériques</option>
+                <option value="securite">Sécurité</option>
+                <option value="autre">Autre</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Priorité</label>
+              <div class="priority-group">
+                <span class="priority-pill">
+                  <input type="radio" name="priority" id="p-low" value="low" data-p="low">
+                  <label for="p-low"><span class="dot dot-low"></span> Basse</label>
+                </span>
+                <span class="priority-pill">
+                  <input type="radio" name="priority" id="p-normal" value="normal" data-p="normal" checked>
+                  <label for="p-normal"><span class="dot dot-med"></span> Normale</label>
+                </span>
+                <span class="priority-pill">
+                  <input type="radio" name="priority" id="p-high" value="high" data-p="high">
+                  <label for="p-high"><span class="dot dot-high"></span> Haute</label>
+                </span>
+                <span class="priority-pill">
+                  <input type="radio" name="priority" id="p-crit" value="critical" data-p="critical">
+                  <label for="p-crit"><span class="dot dot-crit"></span> Critique</label>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION : Sujet + Description -->
+        <div class="form-section">
+          <div class="form-section-title"><i class="fa fa-pencil"></i> &nbsp;Contenu de la demande</div>
+          <div class="grid-1">
+            <div class="field">
+              <label for="subject">Sujet <span class="req">*</span></label>
+              <input type="text" id="subject" name="subject" placeholder="Résumez votre problème en une phrase">
+            </div>
+            <div class="field">
+              <label for="message">Description <span class="req">*</span></label>
+              <textarea id="message" name="message" placeholder="Décrivez votre problème en détail : contexte, messages d'erreur, étapes pour le reproduire…"></textarea>
+              <span class="hint">Plus votre description est précise, plus vite nous pourrons vous aider.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION : Pièces jointes -->
+        <div class="form-section">
+          <div class="form-section-title"><i class="fa fa-paperclip"></i> &nbsp;Pièces jointes</div>
+          <div class="file-drop" onclick="document.getElementById('attachments').click()">
+            <i class="fa fa-cloud-upload"></i>
+            <p>Glissez-déposez vos fichiers ici ou cliquez pour les sélectionner</p>
+            <span class="file-drop-btn">Choisir des fichiers</span>
+            <input type="file" id="attachments" name="attachments[]" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip">
+          </div>
+          <span class="hint" style="display:block;margin-top:6px;">Formats acceptés : images, PDF, Word, Excel, ZIP. Taille max : 10 Mo par fichier.</span>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">
+            <i class="fa fa-paper-plane"></i> Envoyer la demande
+          </button>
+          <a href="index.html" class="btn-cancel">Annuler</a>
+          <span class="form-note"><span class="req" style="color:var(--orange)">*</span> Champs obligatoires</span>
+        </div>
+
+      </form>
+    </div><!-- /form-body -->
+  </div><!-- /form-card -->
+
+</div><!-- /container -->
+
+<footer id="footer">
+  <div>
+    <strong>UDAF 47</strong> — Centre d'assistance informatique
+    <span class="version-tag">v 0.4</span>
+  </div>
+  <div>Propulsé par <a href="#">osTicket</a></div>
+</footer>
+
+<script>
+document.getElementById('ticket-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var name    = document.getElementById('name').value.trim();
+  var email   = document.getElementById('email').value.trim();
+  var dept    = document.getElementById('dept').value;
+  var subject = document.getElementById('subject').value.trim();
+  var message = document.getElementById('message').value.trim();
+
+  // Validation simple
+  var ok = true;
+  [['name',name],['email',email],['dept',dept],['subject',subject],['message',message]].forEach(function(pair) {
+    var el = document.getElementById(pair[0]);
+    if (!pair[1]) { el.style.borderColor = 'var(--orange)'; ok = false; }
+    else el.style.borderColor = '';
+  });
+  if (!ok) return;
+
+  // Simulation succès
+  document.getElementById('ticket-form').style.display = 'none';
+  document.getElementById('success-banner').classList.add('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Drag & drop
+var drop = document.querySelector('.file-drop');
+['dragover','dragenter'].forEach(function(ev) {
+  drop.addEventListener(ev, function(e) { e.preventDefault(); drop.style.borderColor='var(--orange)'; });
+});
+['dragleave','drop'].forEach(function(ev) {
+  drop.addEventListener(ev, function(e) { e.preventDefault(); drop.style.borderColor=''; });
+});
+</script>
+</body>
+</html>
