@@ -313,6 +313,14 @@
   .form-success h4 { font-size: 17px; font-weight: 700; color: var(--text); }
   .form-success p { font-size: 14px; color: var(--muted); line-height: 1.6; }
 
+  /* ── RGPD : consentement + note de confidentialité ── */
+  .form-consent { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 18px; }
+  .form-consent input[type="checkbox"] { width: 16px; height: 16px; margin-top: 3px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+  .form-consent label { font-size: 12.5px; color: var(--muted); line-height: 1.55; font-weight: 400; cursor: pointer; }
+  .form-privacy-note { font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .form-privacy-note a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .form-privacy-note a:hover { text-decoration: underline; }
+
   #contact { background: var(--navy); padding: 60px 52px; display: flex; align-items: center; gap: 40px; border-bottom: none; }
   #contact .avatar-lg { width: 72px; height: 72px; border-radius: 50%; background: var(--navy-light); border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 22px; color: #fff; flex-shrink: 0; overflow: hidden; }
   #contact .avatar-lg img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -828,7 +836,21 @@
           <div class="form-group"><label for="cf-email">Email *</label><input type="email" id="cf-email" name="email" placeholder="marie.dupont@exemple.fr" required></div>
           <div class="form-group"><label for="cf-sujet">Sujet</label><input type="text" id="cf-sujet" name="sujet" placeholder="Question à propos de votre portfolio"></div>
           <div class="form-group"><label for="cf-message">Message *</label><textarea id="cf-message" name="message" placeholder="Bonjour Paolo, je souhaite..." required></textarea></div>
+
+          <div class="form-consent">
+            <input type="checkbox" id="cf-consent" name="consent" required>
+            <label for="cf-consent">J'accepte que les informations saisies ci-dessus soient utilisées par Paolo SCHWAMBACH dans le seul but de traiter ma demande et d'y répondre. Elles ne seront ni conservées au-delà de ce traitement, ni cédées à des tiers.</label>
+          </div>
+
           <button type="submit" class="form-submit" id="submitBtn">Envoyer le message →</button>
+
+          <p class="form-privacy-note">
+            L'envoi de ce formulaire s'effectue via le service tiers
+            <a href="https://formsubmit.co/privacy-policy" target="_blank" rel="noopener">FormSubmit</a>,
+            utilisé uniquement pour la transmission de votre message. Conformément au RGPD, vous disposez
+            d'un droit d'accès, de rectification et de suppression de vos données en écrivant à
+            <a href="mailto:schwambach.paolo@gmail.com">schwambach.paolo@gmail.com</a>.
+          </p>
         </form>
         <div class="form-success" id="formSuccess">
           <div class="success-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg></div>
@@ -862,6 +884,7 @@
   <input type="hidden" name="_subject" value=""><input type="hidden" name="message" value="">
   <input type="hidden" name="_captcha" value="false"><input type="hidden" name="_template" value="table">
   <input type="hidden" name="_autoresponse" value="">
+  <input type="hidden" name="_consentement_horodatage" value="">
 </form>
 
 <script>
@@ -973,6 +996,7 @@ document.getElementById('contactForm').addEventListener('submit', function(e) {
   hf.querySelector('[name="_subject"]').value = document.getElementById('cf-sujet').value || 'Message depuis le portfolio';
   hf.querySelector('[name="message"]').value = document.getElementById('cf-message').value;
   hf.querySelector('[name="_autoresponse"]').value = 'Bonjour ' + (document.getElementById('cf-prenom').value || document.getElementById('cf-nom').value) + ', merci pour votre message !\n\nCordialement,\nPaolo SCHWAMBACH';
+  hf.querySelector('[name="_consentement_horodatage"]').value = new Date().toLocaleString('fr-FR');
   hf.submit();
   setTimeout(() => { this.style.display='none'; document.getElementById('formSuccess').classList.add('show'); }, 800);
 });
