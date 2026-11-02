@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#011973"><title>Démo — Application mobile UDAF 47</title>
+<link rel="stylesheet" href="vendor/font-awesome.min.css">
+<style>
+/* UDAF 47 — App mobile client — mêmes tokens de couleur que le reste du
+   site (copié de mobile/css/app.css pour que les 2 apps restent
+   indépendantes l'une de l'autre, voir plan de conception). */
+:root {
+  --udaf-blue: rgb(1, 25, 115);
+  --udaf-blue-soft: rgba(1, 25, 115, 0.06);
+  --udaf-orange: rgb(254, 67, 41);
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --text: rgb(1, 25, 115);
+  --text-muted: rgba(1, 25, 115, 0.55);
+  --border: rgba(1, 25, 115, 0.12);
+  --danger: #a32d2d;
+  --ok: #0a6040;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.boot-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+/* ── Barre supérieure ── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+  background: var(--udaf-blue);
+  color: #fff;
+}
+.topbar h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  flex: 1;
+}
+.topbar button.icon-btn, .topbar a.icon-btn {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+/* ── Contenu ── */
+.screen { padding: 16px; padding-bottom: 32px; }
+
+/* ── Login / confirmation ── */
+.login-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+.login-logo { text-align: center; margin-bottom: 24px; }
+.login-logo img { max-width: 160px; height: auto; }
+.login-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 24px 20px;
+  box-shadow: 0 12px 30px rgba(1,25,115,0.12);
+}
+.login-card h2 { margin: 0 0 6px; text-align: center; font-size: 1.2rem; }
+.login-card p.login-sub { margin: 0 0 18px; text-align: center; font-size: 14px; color: var(--text-muted); }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+.field input, .field select {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  color: var(--text);
+  background: #fafbff;
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--udaf-orange); }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 50px;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-primary { background: var(--udaf-blue); color: #fff; }
+.btn-primary:active { background: var(--udaf-orange); }
+.btn-ghost { background: transparent; color: var(--udaf-blue); border: 1.5px solid var(--border); }
+.error-msg {
+  background: #fdecea;
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+/* ── Accueil ── */
+/* Empilées de haut en bas plutôt que côte à côte — plus adapté à un
+   écran de téléphone en format portrait. */
+.home-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.home-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+  text-decoration: none;
+  color: var(--text);
+  border-left: 4px solid var(--udaf-orange);
+  box-shadow: 0 4px 14px rgba(1,25,115,0.06);
+}
+.home-card i { font-size: 1.8rem; color: var(--udaf-blue); flex-shrink: 0; }
+.home-card span { font-weight: 700; font-size: 15.5px; }
+
+/* ── Filtres / recherche ── */
+.filter-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.filter-row select, .filter-row input[type="text"] {
+  flex: 1;
+  min-width: 100px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 14.5px;
+  background: #fff;
+  color: var(--text);
+}
+.pill-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.pill-tab {
+  flex: 1;
+  text-align: center;
+  padding: 9px;
+  border-radius: 50px;
+  font-size: 13.5px;
+  font-weight: 700;
+  background: #fff;
+  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+}
+.pill-tab.active { background: var(--udaf-blue); color: #fff; border-color: var(--udaf-blue); }
+
+/* ── Listes ── */
+.list-item {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(1,25,115,0.05);
+  text-decoration: none;
+  color: var(--text);
+  display: block;
+}
+.list-item-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.list-item-num { font-size: 12.5px; color: var(--text-muted); font-weight: 700; }
+.list-item-title { font-size: 15.5px; font-weight: 700; margin: 4px 0 6px; }
+.list-item-meta { font-size: 13px; color: var(--text-muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: 12px; font-weight: 700; background: var(--udaf-blue-soft); color: var(--udaf-blue); }
+
+/* Statuts : rouge = ouvert, vert = résolu, bleu = fermé */
+.badge-status-open     { background: #fdecea; color: #a32d2d; }
+.badge-status-resolved { background: #e6f6ee; color: #0a6040; }
+.badge-status-closed   { background: #e8f0fe; color: #1d56b0; }
+
+.empty-state { text-align: center; color: var(--text-muted); padding: 50px 20px; font-size: 15px; }
+
+/* ── Détail ticket ── */
+.entry {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(1,25,115,0.05);
+}
+.entry-head { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-muted); margin-bottom: 8px; }
+.entry-poster { font-weight: 700; color: var(--text); }
+.entry-body { font-size: 14.5px; line-height: 1.55; word-break: break-word; }
+.entry-body img { max-width: 100%; }
+
+.action-row { display: flex; gap: 10px; margin: 16px 0; }
+
+/* ── Toast / loading ── */
+.loading-inline { text-align: center; color: var(--text-muted); padding: 30px; font-size: 14px; }
+
+/* ── Toast de confirmation ── */
+.app-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 20px);
+  background: var(--ok);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 1200;
+  max-width: 90vw;
+  text-align: center;
+}
+.app-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ── Catégories (nouvelle demande) ── */
+.category-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+.category-card {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.category-card.active { border-color: var(--udaf-orange); background: #fff7f5; }
+.category-card i { font-size: 1.6rem; color: var(--udaf-blue); flex-shrink: 0; }
+.category-card strong { display: block; font-size: 15px; }
+.category-card span { display: block; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── Compteur / pastille de notification ── */
+.home-card { position: relative; }
+.count-badge {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 50px;
+  background: var(--udaf-blue-soft);
+  color: var(--udaf-blue);
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+.dot-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--udaf-orange);
+  box-shadow: 0 0 0 2px #fff;
+}
+.list-item { position: relative; }
+.list-item .dot-badge { top: 12px; right: 12px; }
+
+.demo-tag{position:fixed;top:0;right:0;z-index:50;background:rgb(254,67,41);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-bottom-left-radius:8px;letter-spacing:.3px}
+.thread-reply{margin-top:14px}
+.thread-reply textarea{width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;margin-bottom:10px}
+</style></head><body>
+<div class="demo-tag">DÉMO</div>
+<div id="app"></div>
+<script>
+/* Démo de l'application mobile « utilisateur » — mêmes écrans, mêmes classes CSS et mêmes libellés
+   que mobile-client/js/screens/*.js ; l'API (open.php, tickets) est remplacée par des données fictives. */
+(function () {
+  var USER = { name: 'Camille Durand' };
+  var META = {
+    priorities: [{ id: 1, name: 'Non bloquant' }, { id: 2, name: 'Bloquant' }], default_priority_id: 1,
+    material_types: ['Souris', 'Clavier', 'Casque', 'Écran', 'Câble HDMI'],
+    material_stock: { 'Souris': 6, 'Clavier': 4, 'Casque': 3, 'Écran': 2, 'Câble HDMI': 9 },
+    access_categories: ['Ordinateur virtuel (RDS)', 'Connexion à distance (VPN)', 'Boîte e-mail partagée']
+  };
+  var seq = 583204;
+  var TICKETS = [
+    { id: 3, number: 583204, subject: 'Imprimante du 1er étage : bourrage papier', status: 'Ouvert', dept: 'Support informatique', updated: '2026-11-02 09:14', unseen: true,
+      thread: [ { poster: 'Camille Durand', time: '02/11/2026 09:12', body: 'Bonjour, l\'imprimante du 1er étage affiche « bourrage papier » alors que le bac est vide. Impossible d\'imprimer les dossiers.' },
+                { poster: 'Paolo S. (Support)', time: '02/11/2026 09:14', body: 'Bonjour Camille, je passe la voir dans l\'heure. Pouvez-vous ne pas relancer d\'impression d\'ici là ?' } ] },
+    { id: 2, number: 583177, subject: 'Demande de matériel : Souris', status: 'Résolu', dept: 'Support informatique', updated: '2026-10-30 16:40',
+      thread: [ { poster: 'Camille Durand', time: '30/10/2026 11:02', body: 'Je souhaite une souris sans fil pour mon poste.' },
+                { poster: 'Paolo S. (Support)', time: '30/10/2026 16:40', body: 'Souris réservée, elle vous attend à l\'accueil. Ticket résolu.' } ] },
+    { id: 1, number: 583120, subject: 'Mail frauduleux signalé', status: 'Fermé', dept: 'Sécurité', updated: '2026-10-27 08:55',
+      thread: [ { poster: 'Camille Durand', time: '27/10/2026 08:50', body: 'Faux mail de livraison de colis reçu ce matin, je n\'ai pas cliqué sur le lien.' },
+                { poster: 'Paolo S. (Support)', time: '27/10/2026 08:55', body: 'Merci pour le signalement, le mail a été supprimé de toutes les boîtes. Bravo pour le réflexe.' } ] }
+  ];
+  var CATEGORIES = [
+    { id: 'probleme', icon: 'icon-warning-sign', title: "Demande d'assistance", desc: 'Ordinateur lent, logiciel qui plante, imprimante…' },
+    { id: 'materiel', icon: 'icon-inbox', title: 'Demande de matériel', desc: 'Réserver un équipement disponible' },
+    { id: 'acces', icon: 'icon-lock', title: "Demande d'accès", desc: 'Ordinateur virtuel, connexion à distance, boîte e-mail — pas de panne' },
+    { id: 'phishing', icon: 'icon-envelope', title: 'Mail frauduleux', desc: 'Signaler un email suspect' }
+  ];
+  var app = document.getElementById('app');
+  function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+  function badge(t) {
+    var n = t.status.toLowerCase();
+    var c = n.indexOf('esolu') >= 0 ? 'resolved' : (n.indexOf('erm') >= 0 ? 'closed' : 'open');
+    return 'badge badge-status-' + c;
+  }
+  function fdate(s) { var m = s.match(/(\d+)-(\d+)-(\d+) (\d+:\d+)/); return m[3] + '/' + m[2] + '/' + m[1] + ' ' + m[4]; }
+  function toast(msg) {
+    var t = document.createElement('div'); t.className = 'app-toast'; t.textContent = msg; document.body.appendChild(t);
+    setTimeout(function () { t.classList.add('show'); }, 20);
+    setTimeout(function () { t.classList.remove('show'); setTimeout(function () { t.remove(); }, 300); }, 2600);
+  }
+  function nav(h) { location.hash = h; }
+
+  function login() {
+    app.innerHTML =
+      '<div class="login-wrap"><div class="login-logo"><div style="font-size:30px;font-weight:800;letter-spacing:1px;color:var(--udaf-blue)">UDAF <span style="color:var(--udaf-orange)">47</span></div></div>' +
+      '<div class="login-card"><h2>Assistance informatique</h2><p class="login-sub">Entrez votre adresse e-mail professionnelle pour vous connecter.</p>' +
+      '<div class="field"><label>Adresse e-mail</label><input type="email" id="l-mail" value="camille.durand@exemple.fr"></div>' +
+      '<button class="btn btn-primary" id="l-go">Continuer</button></div></div>';
+    app.querySelector('#l-go').onclick = function () { nav('#/home'); };
+  }
+  function home() {
+    var unseen = TICKETS.some(function (t) { return t.unseen; });
+    app.innerHTML =
+      '<div class="topbar"><h1>Bonjour ' + esc(USER.name.split(' ')[0]) + '</h1><button class="icon-btn" id="out"><i class="icon-off"></i> Quitter</button></div>' +
+      '<div class="screen"><div class="home-grid">' +
+      '<a href="#/new" class="home-card"><i class="icon-plus-sign"></i><span>Nouvelle demande</span></a>' +
+      '<a href="#/tickets" class="home-card"><i class="icon-ticket"></i><span>Mes tickets<span> (' + TICKETS.length + ')</span></span>' + (unseen ? '<span class="dot-badge"></span>' : '') + '</a>' +
+      '</div></div>';
+    app.querySelector('#out').onclick = function () { nav('#/login'); };
+  }
+  function list() {
+    app.innerHTML =
+      '<div class="topbar"><a href="#/home" class="icon-btn"><i class="icon-arrow-left"></i></a><h1>Mes tickets</h1><a href="#/new" class="icon-btn"><i class="icon-plus"></i></a></div>' +
+      '<div class="screen">' + TICKETS.map(function (t) {
+        return '<a href="#/tickets/' + t.id + '" class="list-item">' + (t.unseen ? '<span class="dot-badge"></span>' : '') +
+          '<div class="list-item-head"><span class="list-item-num">#' + t.number + '</span><span class="list-item-num">' + fdate(t.updated) + '</span></div>' +
+          '<div class="list-item-title">' + esc(t.subject) + '</div>' +
+          '<div class="list-item-meta"><span class="' + badge(t) + '">' + esc(t.status) + '</span><span>' + esc(t.dept) + '</span></div></a>';
+      }).join('') + '</div>';
+  }
+  function detail(id) {
+    var t = TICKETS.filter(function (x) { return x.id === id; })[0];
+    if (!t) return nav('#/tickets');
+    t.unseen = false;
+    app.innerHTML =
+      '<div class="topbar"><a href="#/tickets" class="icon-btn"><i class="icon-arrow-left"></i></a><h1>Ticket #' + t.number + '</h1></div>' +
+      '<div class="screen"><div class="list-item-title" style="font-size:17px">' + esc(t.subject) + '</div>' +
+      '<div class="list-item-meta" style="margin-bottom:14px"><span class="' + badge(t) + '">' + esc(t.status) + '</span><span>' + esc(t.dept) + '</span></div>' +
+      '<div id="thr">' + t.thread.map(function (e) {
+        return '<div class="entry"><div class="entry-head"><span class="entry-poster">' + esc(e.poster) + '</span><span>' + esc(e.time) + '</span></div><div class="entry-body">' + esc(e.body) + '</div></div>';
+      }).join('') + '</div>' +
+      (t.status === 'Fermé' ? '' : '<div class="thread-reply"><textarea id="rep" rows="3" placeholder="Votre réponse…"></textarea><button class="btn btn-primary" id="send">Répondre</button></div>') + '</div>';
+    var b = app.querySelector('#send');
+    if (b) b.onclick = function () {
+      var v = app.querySelector('#rep').value.trim(); if (!v) return;
+      t.thread.push({ poster: USER.name, time: 'à l\'instant', body: v }); toast('Réponse envoyée ✓'); detail(id);
+    };
+  }
+  function newTicket() {
+    var state = { category: 'probleme' };
+    app.innerHTML =
+      '<div class="topbar"><a href="#/home" class="icon-btn"><i class="icon-arrow-left"></i></a><h1>Nouvelle demande</h1></div>' +
+      '<div class="screen"><div class="category-grid" id="cats"></div><div id="err"></div><div id="flds"></div>' +
+      '<button type="button" class="btn btn-primary" id="go" style="margin-top:6px;">Envoyer la demande</button></div>';
+    var cats = app.querySelector('#cats'), flds = app.querySelector('#flds'), err = app.querySelector('#err');
+    function rc() {
+      cats.innerHTML = CATEGORIES.map(function (c) {
+        return '<div class="category-card' + (state.category === c.id ? ' active' : '') + '" data-cat="' + c.id + '"><i class="' + c.icon + '"></i><div><strong>' + c.title + '</strong><span>' + c.desc + '</span></div></div>';
+      }).join('');
+      [].forEach.call(cats.querySelectorAll('.category-card'), function (el) {
+        el.onclick = function () { state.category = el.getAttribute('data-cat'); rc(); rf(); };
+      });
+    }
+    function rf() {
+      var h = '', m = META;
+      if (state.category === 'probleme') {
+        h += '<div class="field"><label>Priorité</label><select id="pr">' + m.priorities.map(function (p) { return '<option value="' + p.id + '">' + p.name + '</option>'; }).join('') + '</select></div>';
+        h += '<div class="field"><label>Sujet</label><input type="text" id="sj" placeholder="Résumé du problème"></div>';
+      } else if (state.category === 'materiel') {
+        h += '<div class="field"><label>Type de matériel</label><select id="mt">' + m.material_types.map(function (t) { return '<option>' + t + ' (' + m.material_stock[t] + ' en stock)</option>'; }).join('') + '</select></div>';
+      } else if (state.category === 'acces') {
+        h += '<div class="field"><label>Catégorie d\'accès</label><select id="ac">' + m.access_categories.map(function (a) { return '<option>' + a + '</option>'; }).join('') + '</select></div>';
+      } else {
+        h += '<div class="field"><label>Sujet</label><input type="text" id="sj" placeholder="Sujet du mail suspect"></div>';
+      }
+      h += '<div class="field"><label>' + (state.category === 'phishing' ? 'Description / contenu du mail' : 'Message') + '</label><textarea id="msg" rows="5" placeholder="Détails de votre demande…" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;box-sizing:border-box;"></textarea></div>';
+      if (state.category === 'probleme' || state.category === 'phishing') h += '<div class="field"><label>Capture d\'écran (facultatif)</label><input type="file" accept="image/*"></div>';
+      flds.innerHTML = h;
+    }
+    rc(); rf();
+    app.querySelector('#go').onclick = function () {
+      err.innerHTML = '';
+      var msg = app.querySelector('#msg').value.trim();
+      if (!msg) { err.innerHTML = '<div class="error-msg">Le message est obligatoire.</div>'; return; }
+      var subj = state.category === 'materiel' ? 'Demande de matériel : ' + app.querySelector('#mt').value.replace(/ \(.*/, '')
+        : state.category === 'acces' ? "Demande d'accès : " + app.querySelector('#ac').value
+        : (app.querySelector('#sj').value.trim() || (state.category === 'phishing' ? 'Mail frauduleux signalé' : "Demande d'assistance"));
+      var t = { id: TICKETS.length + 1, number: ++seq + 1, subject: subj, status: 'Ouvert', dept: state.category === 'phishing' ? 'Sécurité' : 'Support informatique',
+        updated: '2026-11-02 15:40', thread: [{ poster: USER.name, time: 'à l\'instant', body: msg }] };
+      TICKETS.unshift(t); toast('Ticket #' + t.number + ' créé ✓'); nav('#/tickets/' + t.id);
+    };
+  }
+  function route() {
+    var h = location.hash.replace(/^#/, '') || '/login', m;
+    window.scrollTo(0, 0);
+    if (h === '/login') login();
+    else if (h === '/home') home();
+    else if (h === '/new') newTicket();
+    else if (h === '/tickets') list();
+    else if ((m = h.match(/^\/tickets\/(\d+)$/))) detail(+m[1]);
+    else nav('#/home');
+  }
+  window.addEventListener('hashchange', route); route();
+})();
+
+</script></body></html>

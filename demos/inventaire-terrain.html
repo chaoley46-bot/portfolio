@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Démo — Saisie terrain depuis un téléphone (formulaire d'Issue)</title>
+<style>
+:root{--bg:#f6f8fa;--card:#fff;--text:#1f2328;--muted:#656d76;--border:#d0d7de;--green:#1a7f37;--red:#cf222e;--purple:#8250df;--blue:#0969da}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.demo{background:rgb(254,67,41);color:#fff;text-align:center;font-size:10.5px;font-weight:700;padding:5px 8px}
+.top{background:#24292f;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;font-weight:700}
+.top small{font-weight:400;opacity:.7;margin-left:auto;font-size:12px}
+.screen{padding:16px}
+h1{font-size:19px;margin:0 0 4px}.sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+.f{margin-bottom:14px}.f label{display:block;font-weight:700;margin-bottom:3px;font-size:14px}.f .d{font-size:12.5px;color:var(--muted);margin-bottom:5px}
+.f input,.f select,.f textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font:inherit;color:var(--text);background:#fff}
+.f input:focus,.f select:focus,.f textarea:focus{outline:2px solid var(--blue);outline-offset:-1px}
+.req{color:var(--red)}
+.btn{display:block;width:100%;border:0;border-radius:8px;padding:12px;font:inherit;font-weight:700;cursor:pointer;background:var(--green);color:#fff;margin-top:6px}
+.btn.s{background:#fff;color:var(--text);border:1px solid var(--border)}
+.err{background:#ffebe9;border:1px solid #ff8182;color:var(--red);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13.5px}
+.badge{display:inline-flex;gap:5px;align-items:center;border-radius:50px;padding:3px 11px;font-size:12.5px;font-weight:700;color:#fff}
+.b-open{background:var(--green)}.b-closed{background:var(--purple)}
+.lbl{display:inline-block;border-radius:50px;padding:1px 9px;font-size:11.5px;font-weight:700;background:#ddf4ff;color:#0550ae;margin-left:4px}
+.c{border:1px solid var(--border);border-radius:10px;background:#fff;margin:12px 0;overflow:hidden}
+.c-h{background:#f6f8fa;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted)}.c-h b{color:var(--text)}
+.c-b{padding:12px;font-size:14px;white-space:pre-wrap}
+.c-b dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0}.c-b dt{font-weight:700}.c-b dd{margin:0}
+.srv{white-space:pre-wrap;background:#1f2328;color:#e6edf3;border-radius:10px;padding:10px 12px;font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;margin-top:10px}
+.tl{font-size:12.5px;color:var(--muted);margin-top:8px}
+</style></head><body>
+<div class="demo">DÉMONSTRATION — reproduction simplifiée du formulaire d'Issue (template réel du projet)</div>
+<div class="top"><span>☰</span><span id="ttl">Nouvelle Issue</span><small>inventaire-terrain</small></div>
+<div class="screen" id="root"></div>
+<script>
+var root=document.getElementById('root'),ttl=document.getElementById('ttl'),seq=17,last=null;
+function form(err){
+  ttl.textContent='Nouvelle Issue';
+  root.innerHTML='<h1>Maintenance / modification équipement</h1><div class="sub">Enregistrer une action sur un équipement (maintenance, Windows 11, batterie, attribution, note). Synchronisé automatiquement avec l\'inventaire — une connexion internet (4G comprise) suffit.</div>'+(err?'<div class="err">'+err+'</div>':'')+
+  '<div class="f"><label>Type d\'équipement <span class="req">*</span></label><select id="type">'+['Ordinateur','Téléphone','Écran','Câble','Souris','Casque','Clavier','Autre'].map(function(o){return '<option>'+o+'</option>'}).join('')+'</select></div>'+
+  '<div class="f"><label>N° de poste (ordinateurs uniquement)</label><div class="d">Les 4 chiffres du numéro de poste (ex. 0042 pour PO-UDAF-0042). Laisser vide pour tout autre équipement.</div><input id="pc" inputmode="numeric" placeholder="0042" value="0042"></div>'+
+  '<div class="f"><label>Référence complète (tout équipement SAUF ordinateur)</label><div class="d">Exactement comme dans l\'inventaire (étiquette, n° de série…).</div><input id="ref" placeholder="ECRAN-12"></div>'+
+  '<div class="f"><label>Action effectuée <span class="req">*</span></label><select id="act">'+['Maintenance effectuée','Passage sous Windows 11','Retour sous Windows 10','Batterie changée','Batterie non changée (à prévoir)','Attribuer à quelqu\'un','Note / remarque','Autre (préciser dans la note)'].map(function(o,i){return '<option'+(i===1?' selected':'')+'>'+o+'</option>'}).join('')+'</select></div>'+
+  '<div class="f"><label>Attribuer à (nom complet du destinataire)</label><div class="d">Uniquement pour « Attribuer à quelqu\'un ».</div><input id="who" placeholder="Jean Dupont"></div>'+
+  '<div class="f"><label>Note / détails</label><textarea id="note" rows="3" placeholder="Ex : remplacement du bloc secteur, RAS sinon."></textarea></div>'+
+  '<button class="btn" id="sub">Envoyer l\'Issue</button>';
+  document.getElementById('sub').onclick=submit;
+}
+function submit(){
+  var t=document.getElementById('type').value,pc=document.getElementById('pc').value.trim(),ref=document.getElementById('ref').value.trim(),act=document.getElementById('act').value,who=document.getElementById('who').value.trim(),note=document.getElementById('note').value.trim();
+  if(t==='Ordinateur'&&!/^\d{4}$/.test(pc))return form('Pour un ordinateur, saisissez les 4 chiffres du numéro de poste.');
+  if(t!=='Ordinateur'&&!ref)return form('Renseignez la référence complète de l\'équipement.');
+  if(act.indexOf('Attribuer')===0&&!who)return form('Indiquez le nom complet du destinataire.');
+  var eq=t==='Ordinateur'?'PO-UDAF-'+pc:ref;
+  last={n:++seq,t:t,eq:eq,pc:pc,act:act,who:who,note:note,state:'open',res:null};issue();
+}
+function issue(){
+  var i=last;ttl.textContent='Issue #'+i.n;
+  root.innerHTML='<h1>[INV] '+i.eq+' — '+i.act+'</h1><div style="margin:6px 0 10px"><span class="badge '+(i.state==='open'?'b-open':'b-closed')+'">'+(i.state==='open'?'● Ouverte':'✓ Fermée')+'</span><span class="lbl">a-synchroniser</span></div>'+
+  '<div class="c"><div class="c-h"><b>technicien</b> a ouvert cette Issue à l\'instant (4G)</div><div class="c-b"><dl><dt>Type d\'équipement</dt><dd>'+i.t+'</dd><dt>N° de poste</dt><dd>'+(i.t==='Ordinateur'?i.pc:'—')+'</dd><dt>Référence</dt><dd>'+(i.t==='Ordinateur'?'—':i.eq)+'</dd><dt>Action</dt><dd>'+i.act+'</dd>'+(i.who?'<dt>Attribuer à</dt><dd>'+i.who.replace(/</g,'&lt;')+'</dd>':'')+(i.note?'<dt>Note</dt><dd>'+i.note.replace(/</g,'&lt;')+'</dd>':'')+'</dl></div></div>';
+  if(i.state==='open'){
+    root.innerHTML+='<div class="tl">⏳ En attente de la prochaine synchronisation (tâche planifiée toutes les 15–30 min sur le serveur).</div><button class="btn s" id="sync">▶ Simuler la synchronisation</button><button class="btn s" id="new">Nouvelle Issue</button>';
+    document.getElementById('sync').onclick=function(){i.state='closed';i.res=(i.eq==='PO-UDAF-9999'||i.eq==='PO-UDAF-0000')?'ko':'ok';issue()};
+  }else{
+    var ok=i.res==='ok';
+    root.innerHTML+='<div class="c"><div class="c-h"><b>udaf-sync-bot</b> a commenté</div><div class="c-b">'+(ok?'✅ <b>Appliqué à l\'inventaire</b> : '+i.eq+' — '+i.act+(i.who?' ('+i.who.replace(/</g,'&lt;')+')':'')+'.\nIssue fermée automatiquement.':'⚠️ <b>Non appliqué</b> : la référence « '+i.eq+' » ne correspond à aucun équipement de l\'inventaire. Corrigez-la puis ouvrez une nouvelle Issue.')+'</div></div>'+
+    '<div class="srv">$ php manage.php github-inventory sync\n'+(ok?'[OK] #'+i.n+' '+i.eq+' → '+i.act:'[ERREUR] #'+i.n+' référence introuvable')+'\n1 Issue traitée, Issue commentée et fermée.</div><button class="btn s" id="new" style="margin-top:12px">Nouvelle Issue</button>';
+  }
+  document.getElementById('new').onclick=function(){form()};
+}
+form();
+</script></body></html>

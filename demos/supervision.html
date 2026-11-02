@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Démo — Supervision des serveurs</title>
+<link rel="stylesheet" href="vendor/font-awesome.min.css">
+<style>
+html,body{margin:0;background:#f4f6fb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:rgb(1,25,115)}
+.demo-banner{background:rgb(254,67,41);color:#fff;text-align:center;font-size:12.5px;font-weight:700;padding:6px 10px;letter-spacing:.2px}
+
+
+.sm-wrap { max-width: 1500px; margin: 0 auto; padding: 26px 24px 70px; color: rgb(1,25,115); }
+.sm-wrap * { box-sizing: border-box; }
+.sm-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 20px; }
+.sm-head h2 { margin: 0 0 4px; color: rgb(1,25,115); }
+.sm-head p { margin: 0; color: rgba(1,25,115,.55); font-size: 14.5px; }
+.sm-tabs { display: flex; gap: 6px; background: rgba(1,25,115,.06); padding: 4px; border-radius: 12px; }
+.sm-tabs a { padding: 8px 16px; border-radius: 9px; color: rgb(1,25,115); text-decoration: none; font-weight: 600; font-size: 14px; }
+.sm-tabs a.active { background: #fff; box-shadow: 0 1px 3px rgba(1,25,115,.15); }
+.sm-tabs a:hover { text-decoration: none; }
+.sm-btn { display: inline-flex; align-items: center; gap: 6px; border: 0.625px solid rgba(1,25,115,.2); background: #fff;
+  color: rgb(1,25,115); border-radius: 9px; padding: 7px 13px; font-size: 13.5px; font-weight: 600; cursor: pointer; line-height: 1.2; }
+.sm-btn:hover { background: rgba(1,25,115,.05); }
+.sm-btn.primary { background: rgb(1,25,115); border-color: rgb(1,25,115); color: #fff; }
+.sm-btn.primary:hover { background: rgb(20,45,140); }
+.sm-btn.danger { color: #b3261e; border-color: rgba(179,38,30,.35); }
+.sm-btn.small { padding: 4px 9px; font-size: 12.5px; }
+.sm-btn.on { background: rgb(254,67,41); border-color: rgb(254,67,41); color: #fff; }
+.sm-btn[disabled] { opacity: .5; cursor: default; }
+.sm-flash { padding: 11px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 14.5px; }
+.sm-flash.ok { background: #e7f6ec; color: #17663a; }
+.sm-flash.err { background: #fdecea; color: #b3261e; }
+.sm-card { background: #fff; border: 0.625px solid rgba(1,25,115,.12); border-radius: 15px; padding: 20px 22px; margin-bottom: 20px; }
+.sm-card h3 { margin: 0 0 14px; font-size: 14px; text-transform: uppercase; letter-spacing: .4px; display: flex; align-items: center; gap: 8px; }
+.sm-card h3 i { color: rgb(254,67,41); }
+.sm-muted { color: rgba(1,25,115,.5); }
+.sm-small { font-size: 12.5px; }
+
+/* Résumé */
+.sm-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.sm-stat { background: #fff; border: 0.625px solid rgba(1,25,115,.12); border-radius: 14px; padding: 14px 18px; cursor: pointer; }
+.sm-stat.active { outline: 2px solid rgb(1,25,115); }
+.sm-stat .v { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+.sm-stat .l { font-size: 12.5px; color: rgba(1,25,115,.55); margin-top: 5px; }
+.sm-stat.up .v { color: #1e8e4f; } .sm-stat.warn .v { color: #d48806; } .sm-stat.down .v { color: #d93025; } .sm-stat.old .v { color: rgb(254,67,41); }
+
+/* Statuts */
+.sm-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #9aa3c0; flex: none; }
+.sm-dot.up { background: #1e8e4f; } .sm-dot.warn { background: #f0a020; } .sm-dot.down { background: #d93025; box-shadow: 0 0 0 3px rgba(217,48,37,.2); }
+.sm-dot.off { background: #d4d8e5; }
+.sm-pill { display: inline-block; border-radius: 20px; padding: 2px 8px; font-size: 11.5px; font-weight: 600; margin: 1px 2px 1px 0; white-space: nowrap; }
+.sm-pill.ok { background: #e7f6ec; color: #17663a; } .sm-pill.ko { background: #fdecea; color: #b3261e; } .sm-pill.na { background: #eef0f6; color: #5a6385; }
+.sm-pill.src { background: rgba(1,25,115,.08); color: rgb(1,25,115); }
+.sm-pill.late { background: rgb(254,67,41); color: #fff; }
+
+/* Tableau */
+.sm-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+.sm-toolbar input[type=search] { padding: 8px 12px; border: 0.625px solid rgba(1,25,115,.25); border-radius: 9px; min-width: 240px; font-size: 14px; }
+.sm-toolbar .sm-spacer { flex: 1; }
+table.sm-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; border: 0.625px solid rgba(1,25,115,.1); }
+table.sm-table th, table.sm-table td { padding: 10px 12px; text-align: left; font-size: 14px; border-bottom: 0.625px solid rgba(1,25,115,.08); vertical-align: middle; }
+table.sm-table th { color: rgba(1,25,115,.55); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; user-select: none; }
+table.sm-table th[data-sort] { cursor: pointer; }
+table.sm-table th[data-sort]:hover { color: rgb(1,25,115); }
+table.sm-table tr.sm-row { cursor: pointer; }
+table.sm-table tr.sm-row:hover td { background: rgba(1,25,115,.025); }
+table.sm-table tr.sm-row.inactive td { opacity: .55; }
+table.sm-table tr.sm-detail td { background: rgba(1,25,115,.03); }
+.sm-name { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.sm-sub { color: rgba(1,25,115,.55); font-size: 12.5px; margin-top: 2px; }
+.sm-host { font-family: Consolas, monospace; font-size: 13px; }
+.sm-bar { height: 6px; background: #eef0f6; border-radius: 3px; overflow: hidden; width: 90px; margin-top: 3px; }
+.sm-bar > span { display: block; height: 100%; background: #1e8e4f; }
+.sm-bar.mid > span { background: #f0a020; } .sm-bar.high > span { background: #d93025; }
+.sm-spin { display: inline-block; animation: smspin 1s linear infinite; }
+@keyframes smspin { to { transform: rotate(360deg); } }
+.sm-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 28px; padding: 6px 4px; }
+.sm-details h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: rgba(1,25,115,.55); }
+.sm-details .sm-err { color: #b3261e; font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+.sm-events { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.sm-events li { padding: 4px 0; border-bottom: 0.625px dashed rgba(1,25,115,.1); display: flex; gap: 8px; }
+.sm-events time { color: rgba(1,25,115,.55); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sm-ev { font-weight: 700; white-space: nowrap; }
+.sm-ev.down { color: #d93025; } .sm-ev.up, .sm-ev.ok { color: #1e8e4f; } .sm-ev.warn { color: #d48806; } .sm-ev.reboot { color: rgb(254,67,41); }
+.sm-empty { text-align: center; padding: 40px 20px; color: rgba(1,25,115,.45); }
+
+/* Plans */
+.sm-plans { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+.sm-plans a.sm-plan-tab { padding: 7px 14px; border-radius: 9px; background: #fff; border: 0.625px solid rgba(1,25,115,.18); color: rgb(1,25,115); font-weight: 600; font-size: 13.5px; text-decoration: none; }
+.sm-plans a.sm-plan-tab.active { background: rgb(1,25,115); color: #fff; border-color: rgb(1,25,115); }
+.sm-plans form { display: inline-flex; gap: 6px; margin: 0; }
+.sm-plans input[type=text], .sm-edit-bar input[type=text] { padding: 6px 10px; border: 0.625px solid rgba(1,25,115,.25); border-radius: 8px; font-size: 13.5px; }
+.sm-map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+@media (max-width: 1100px) { .sm-map-layout { grid-template-columns: 1fr; } }
+.sm-edit-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; padding: 10px 12px; background: rgba(254,67,41,.07); border-radius: 12px; }
+.sm-edit-bar form { display: inline-flex; gap: 6px; align-items: center; margin: 0; }
+.sm-canvas { position: relative; background: #fff; border: 0.625px solid rgba(1,25,115,.15); border-radius: 14px; overflow: hidden; user-select: none; touch-action: none; }
+.sm-canvas.nobg { background-color: #fbfcff;
+  background-image: linear-gradient(rgba(1,25,115,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(1,25,115,.05) 1px, transparent 1px);
+  background-size: 28px 28px; }
+.sm-canvas.nobg::before { content: ''; display: block; padding-top: 56.25%; }
+.sm-canvas img.sm-bg { display: block; width: 100%; height: auto; pointer-events: none; }
+.sm-canvas svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sm-canvas svg line { stroke-width: 3; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.sm-canvas svg line.hit { stroke: transparent; stroke-width: 14; cursor: pointer; }
+.sm-canvas:not(.editing) svg { pointer-events: none; }
+.sm-node { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; cursor: pointer; z-index: 2; }
+.sm-node .ico { width: 46px; height: 46px; border-radius: 13px; background: #fff; border: 3px solid #9aa3c0; display: flex; align-items: center; justify-content: center; font-size: 20px; color: rgb(1,25,115); box-shadow: 0 2px 6px rgba(1,25,115,.18); position: relative; }
+.sm-node.up .ico { border-color: #1e8e4f; } .sm-node.warn .ico { border-color: #f0a020; }
+.sm-node.down .ico { border-color: #d93025; animation: smpulse 1.6s ease-in-out infinite; }
+.sm-node.off .ico { border-color: #d4d8e5; opacity: .6; }
+@keyframes smpulse { 50% { box-shadow: 0 0 0 7px rgba(217,48,37,.25); } }
+.sm-node .lbl { margin-top: 4px; background: rgba(255,255,255,.92); border-radius: 6px; padding: 1px 6px; font-size: 12px; font-weight: 700; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.sm-node .up-t { font-size: 11px; background: rgba(255,255,255,.92); border-radius: 6px; padding: 0 5px; color: rgba(1,25,115,.65); white-space: nowrap; }
+.sm-node .up-t.late { background: rgb(254,67,41); color: #fff; }
+.sm-node.sel .ico { outline: 3px solid rgb(254,67,41); outline-offset: 2px; }
+.sm-node .rm, .sm-label .rm, .sm-label .sz { display: none; position: absolute; top: -8px; right: -8px; width: 19px; height: 19px; border-radius: 50%; background: #d93025; color: #fff; font-size: 11px; line-height: 19px; text-align: center; cursor: pointer; z-index: 3; }
+.sm-canvas.editing .sm-node .rm, .sm-canvas.editing .sm-label .rm, .sm-canvas.editing .sm-label .sz { display: block; }
+.sm-label .sz { right: 14px; background: rgb(1,25,115); }
+.sm-canvas.editing .sm-node, .sm-canvas.editing .sm-label { cursor: move; }
+.sm-canvas.linking .sm-node { cursor: crosshair; }
+.sm-label { position: absolute; transform: translate(-50%, -50%); z-index: 1; font-weight: 700; color: rgb(1,25,115); background: rgba(255,255,255,.75); border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+.sm-label.s { font-size: 12px; } .sm-label.m { font-size: 15px; } .sm-label.l { font-size: 21px; text-transform: uppercase; letter-spacing: .5px; }
+.sm-side { position: sticky; top: 12px; }
+.sm-side .sm-card { padding: 16px 18px; }
+.sm-palette { max-height: 380px; overflow: auto; margin: 0; padding: 0; list-style: none; }
+.sm-palette li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 0.625px dashed rgba(1,25,115,.1); font-size: 13.5px; }
+
+/* Configuration */
+.sm-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px 18px; }
+.sm-form label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 4px; color: rgba(1,25,115,.75); }
+.sm-form input[type=text], .sm-form input[type=password], .sm-form input[type=number], .sm-form select {
+  width: 100%; padding: 8px 10px; border: 0.625px solid rgba(1,25,115,.25); border-radius: 8px; font-size: 14px; background: #fff; }
+.sm-form .full { grid-column: 1 / -1; }
+.sm-form .chk { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13.5px; margin-top: 4px; }
+.sm-presets { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.sm-help { font-size: 13.5px; line-height: 1.55; }
+.sm-help code, .sm-code { background: rgba(1,25,115,.06); border-radius: 5px; padding: 1px 5px; font-size: 12.5px; word-break: break-all; }
+.sm-code { display: block; padding: 8px 10px; margin: 6px 0; user-select: all; }
+.sm-test-out { white-space: pre-wrap; font-family: Consolas, monospace; font-size: 12.5px; background: #0f1a4a; color: #e6ebff; border-radius: 10px; padding: 12px 14px; margin-top: 12px; display: none; max-height: 340px; overflow: auto; }
+
+.sm-wrap{padding-top:18px}
+@media(max-width:900px){table.sm-table{display:block;overflow-x:auto}}
+</style></head><body>
+<div class="demo-banner">DÉMONSTRATION — serveurs et données fictifs · le code d'affichage est celui de l'application réelle</div>
+<div class="sm-wrap" id="sm-root">
+<div class="sm-head">
+  <div><h2>Supervision des serveurs</h2>
+    <p>Disponibilité et dernier redémarrage, vérifiés depuis le serveur osTicket, sans agent. <span id="sm-lastpoll" class="sm-muted"></span></p></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <nav class="sm-tabs">
+      <a href="#" data-view="list" class="active"><i class="icon-list"></i> Liste</a>
+      <a href="#" data-view="map"><i class="icon-map-marker"></i> Plans</a>
+    </nav>
+    <button type="button" class="sm-btn primary" id="sm-poll-all"><i class="icon-refresh"></i> Tout vérifier</button>
+  </div>
+</div>
+
+<div id="sm-view-list">
+  <div class="sm-summary" id="sm-summary"></div>
+  <div class="sm-toolbar">
+    <input type="search" id="sm-search" placeholder="Rechercher un nom, une IP, un rôle…">
+    <label class="sm-small" style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="sm-show-inactive"> Afficher les serveurs désactivés</label>
+    <span class="sm-spacer"></span>
+    <span class="sm-small sm-muted">Clic sur une ligne pour le détail · rafraîchissement auto toutes les 5 min</span>
+  </div>
+  <table class="sm-table"><thead><tr>
+    <th data-sort="status">État</th><th data-sort="name">Serveur</th><th data-sort="host">Adresse</th><th>Contrôles</th>
+    <th data-sort="latency">Latence</th><th data-sort="uptime">Dernier redémarrage</th><th>Ressources</th>
+    <th data-sort="sessions">Sessions</th><th data-sort="check">Vérifié</th><th></th></tr></thead>
+    <tbody id="sm-tbody"></tbody></table>
+  <div class="sm-card" style="margin-top:24px;"><h3><i class="icon-time"></i> Journal récent</h3>
+    <ul class="sm-events" id="sm-journal"></ul></div>
+</div>
+
+<div id="sm-view-map" style="display:none">
+  <div class="sm-plans"><a class="sm-plan-tab active" href="#" onclick="return false">Salle serveur</a></div>
+  <div class="sm-edit-bar" id="sm-edit-bar">
+    <button type="button" class="sm-btn" id="sm-edit-toggle"><i class="icon-pencil"></i> Modifier le plan</button>
+    <span id="sm-edit-tools" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button type="button" class="sm-btn primary" id="sm-save"><i class="icon-ok"></i> Enregistrer</button>
+      <button type="button" class="sm-btn" id="sm-cancel">Annuler</button>
+      <button type="button" class="sm-btn" id="sm-link-mode"><i class="icon-link"></i> Relier</button>
+      <button type="button" class="sm-btn" id="sm-add-label"><i class="icon-font"></i> Ajouter un texte</button>
+      <span class="sm-muted sm-small">Glissez les éléments pour les déplacer</span>
+    </span>
+  </div>
+  <div class="sm-edit-bar" id="sm-plan-admin" style="display:none;"><span class="sm-muted sm-small">Démo : les modifications restent dans votre navigateur.</span></div>
+  <div class="sm-map-layout">
+    <div class="sm-canvas nobg" id="sm-canvas"><svg id="sm-links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div id="sm-layer"></div></div>
+    <aside class="sm-side">
+      <div class="sm-card" id="sm-palette-card" style="display:none;"><h3><i class="icon-plus"></i> Serveurs à placer</h3><ul class="sm-palette" id="sm-palette"></ul></div>
+      <div class="sm-card" id="sm-panel"><div class="sm-muted sm-small">Cliquez sur un serveur du plan pour afficher son détail.</div></div>
+    </aside>
+  </div>
+</div>
+</div>
+<script src="vendor/jquery.min.js"></script>
+<script>
+
+(function () {
+'use strict';
+var root = document.getElementById('sm-root');
+var NOW0 = Math.floor(Date.now() / 1000);
+var D = 86400, H = 3600, M = 60;
+var SM = {
+  view: 'list', canManage: true, interval: 300, rebootDays: 60,
+  kinds: {"server":["Serveur","icon-hdd"],"dc":["Contrôleur de domaine","icon-key"],"vm":["Hyperviseur / VM","icon-cloud"],"storage":["Stockage / NAS","icon-archive"],"network":["Réseau (switch, routeur, borne)","icon-sitemap"],"firewall":["Pare-feu","icon-shield"],"printer":["Imprimante","icon-print"],"other":["Autre","icon-desktop"]},
+  accounts: [{id: 1, label: 'DEMO.LOCAL', user: 'demo\\svc-supervision'}],
+  servers: {}, order: [],
+  plan: { id: 1,
+    nodes: [ {id:10,x:50,y:14}, {id:9,x:50,y:34}, {id:1,x:18,y:56}, {id:2,x:34,y:56}, {id:3,x:50,y:56}, {id:4,x:66,y:56}, {id:7,x:82,y:56},
+             {id:8,x:38,y:82}, {id:5,x:60,y:82}, {id:6,x:78,y:82} ],
+    links: [[10,9],[9,1],[9,2],[9,3],[9,4],[9,7],[4,5],[4,6],[3,8]],
+    labels: [ {x:12,y:10,text:'Internet / FAI',size:'s'}, {x:38,y:94,text:'Stockage',size:'m'}, {x:69,y:94,text:'Virtualisation',size:'m'} ] },
+  csrfName: 'csrf_token', csrf: 'demo', offset: 0, polling: {}, queue: [], running: 0
+};
+function mkSrv(o) {
+  var base = { active: 1, status: 'up', status_since: NOW0 - 9 * D, last_seen: NOW0 - 90, last_check: NOW0 - 90 - Math.floor(Math.random() * 120),
+    do_ping: 1, uptime_method: 'wmi', wmi_account: 1, boot_source: 'wmi', last_error: '', up_since: 0, role: '', ports: '' };
+  for (var k in o) base[k] = o[k];
+  return base;
+}
+var SM_SERVERS = [
+  mkSrv({id:1, name:'SRV-AD01', host:'10.10.0.10', kind:'dc', role:'AD, DNS, DHCP', ports:'53,88,389,445', latency_ms:1, boot_time:NOW0-41*D-5*H,
+    details:{ping:{ok:true,ms:1},ports:[{port:'53',ok:true,ms:2},{port:'88',ok:true,ms:2},{port:'389',ok:true,ms:3},{port:'445',ok:true,ms:2}],mem:{total:17179869184,free:9100000000},disks:[{id:'C:',size:127000000000,free:61000000000}],sessions:{src:'perf',active:1,inactive:0,total:1,at:NOW0-120},os:'Windows Server 2022 Standard',via:'WMI'}}),
+  mkSrv({id:2, name:'SRV-AD02', host:'10.10.0.11', kind:'dc', role:'AD, DNS (secondaire)', ports:'53,88,389,445', latency_ms:1, boot_time:NOW0-12*D-3*H,
+    details:{ping:{ok:true,ms:1},ports:[{port:'53',ok:true,ms:2},{port:'88',ok:true,ms:2},{port:'389',ok:true,ms:2},{port:'445',ok:true,ms:3}],mem:{total:17179869184,free:10200000000},disks:[{id:'C:',size:127000000000,free:70000000000}],sessions:{src:'perf',active:0,inactive:0,total:0,at:NOW0-120},os:'Windows Server 2022 Standard',via:'WMI'}}),
+  mkSrv({id:3, name:'SRV-FICHIERS', host:'10.10.0.20', kind:'server', role:'Partages de fichiers', ports:'445', latency_ms:2, boot_time:NOW0-27*D-8*H,
+    details:{ping:{ok:true,ms:2},ports:[{port:'445',ok:true,ms:3}],mem:{total:34359738368,free:6000000000},disks:[{id:'C:',size:127000000000,free:80000000000},{id:'D:',size:2000000000000,free:190000000000}],sessions:{src:'perf',active:6,inactive:2,total:8,at:NOW0-120},os:'Windows Server 2019 Standard',via:'WMI'}}),
+  mkSrv({id:4, name:'SRV-HYPERV01', host:'10.10.0.30', kind:'vm', role:'Hyperviseur (VM métiers)', ports:'443,5985', latency_ms:1, boot_time:NOW0-63*D-2*H,
+    details:{ping:{ok:true,ms:1},ports:[{port:'443',ok:true,ms:4},{port:'5985',ok:true,ms:3}],mem:{total:137438953472,free:30000000000},disks:[{id:'C:',size:500000000000,free:210000000000},{id:'E:',size:4000000000000,free:900000000000}],sessions:{src:'perf',active:1,inactive:0,total:1,at:NOW0-120},os:'Windows Server 2022 Datacenter',via:'WMI'}}),
+  mkSrv({id:5, name:'SRV-SQL01', host:'10.10.0.40', kind:'server', role:'SQL Server (applications métiers)', ports:'1433', status:'warn', status_since:NOW0-3*H-12*M, latency_ms:3, boot_time:NOW0-19*D-1*H,
+    last_error:'Port 1433 : connexion refusée (service SQL Server arrêté ?)',
+    details:{ping:{ok:true,ms:3},ports:[{port:'1433',ok:false,ms:null,error:'connexion refusée'}],mem:{total:34359738368,free:2500000000},disks:[{id:'C:',size:127000000000,free:50000000000},{id:'D:',size:500000000000,free:44000000000}],sessions:{src:'perf',active:2,inactive:1,total:3,at:NOW0-120},os:'Windows Server 2019 Standard',via:'WMI'}}),
+  mkSrv({id:6, name:'SRV-MAIL', host:'10.10.0.50', kind:'server', role:'Messagerie', ports:'25,443', status:'down', status_since:NOW0-47*M, last_seen:NOW0-47*M-30, latency_ms:null, boot_time:NOW0-30*D, boot_source:'wmi',
+    last_error:'Ping : pas de réponse · Port 25 : délai dépassé · Port 443 : délai dépassé',
+    details:{ping:{ok:false,ms:null,error:'pas de réponse'},ports:[{port:'25',ok:false,error:'délai dépassé'},{port:'443',ok:false,error:'délai dépassé'}],os:'Windows Server 2019 Standard',via:'WMI'}}),
+  mkSrv({id:7, name:'SRV-RDS01', host:'10.10.0.60', kind:'server', role:'Bureaux à distance', ports:'3389', latency_ms:2, boot_time:NOW0-2*D-5*H,
+    details:{ping:{ok:true,ms:2},ports:[{port:'3389',ok:true,ms:3}],mem:{total:68719476736,free:21000000000},disks:[{id:'C:',size:250000000000,free:120000000000}],sessions:{src:'perf',active:14,inactive:3,total:17,at:NOW0-120},os:'Windows Server 2022 Standard',via:'WMI'}}),
+  mkSrv({id:8, name:'NAS-SAUVEGARDE', host:'10.10.0.70', kind:'storage', role:'Sauvegardes (Synology)', ports:'5001', uptime_method:'snmp', wmi_account:0, boot_source:'snmp', latency_ms:2, boot_time:NOW0-184*D-6*H,
+    details:{ping:{ok:true,ms:2},ports:[{port:'5001',ok:true,ms:6}],disks:[{id:'Volume 1',size:16000000000000,free:1500000000000}],os:'DSM 7.2',via:'SNMP'}}),
+  mkSrv({id:9, name:'FW-PRINCIPAL', host:'10.10.0.1', kind:'firewall', role:'Pare-feu / routeur', ports:'443', uptime_method:'snmp', wmi_account:0, boot_source:'snmp', latency_ms:1, boot_time:NOW0-96*D-4*H,
+    details:{ping:{ok:true,ms:1},ports:[{port:'443',ok:true,ms:5}],os:'Firmware 7.4',via:'SNMP'}}),
+  mkSrv({id:10, name:'SW-CORE', host:'10.10.0.2', kind:'network', role:'Switch cœur de réseau', ports:'', uptime_method:'snmp', wmi_account:0, boot_source:'snmp', latency_ms:1, boot_time:NOW0-148*D-1*H,
+    details:{ping:{ok:true,ms:1},ports:[],os:'Switch 48 ports',via:'SNMP'}}),
+  mkSrv({id:11, name:'IMP-ACCUEIL', host:'10.10.0.200', kind:'printer', role:'Imprimante accueil', ports:'9100', active:0, uptime_method:'none', wmi_account:0, status:'unknown', last_check:0, last_seen:0, details:{}})
+];
+SM_SERVERS.forEach(function (s) { SM.servers[s.id] = s; SM.order.push(s.id); });
+function DEMO_EVENTS(id) {
+  var s = SM.servers[id], ev = [];
+  if (id === 6) ev.push({type:'down', created: s.status_since, info:'Ping et ports 25/443 sans réponse'});
+  if (id === 5) ev.push({type:'warn', created: s.status_since, info:'Port 1433 injoignable (ping OK)'});
+  if (s.boot_time && s.active) ev.push({type:'reboot', created: s.boot_time, info:'Redémarrage détecté (' + (s.boot_source || '').toUpperCase() + ')'});
+  if (id === 3) ev.push({type:'down', created: NOW0 - 33*D, info:'Hors ligne 12 min (maintenance)'}, {type:'ok', created: NOW0 - 33*D + 720, info:'Retour en ligne'});
+  if (id === 4) ev.push({type:'warn', created: NOW0 - 15*D, info:'Port 443 lent (> 2 s)'}, {type:'ok', created: NOW0 - 15*D + 1800, info:'Rétabli'});
+  return ev.sort(function (a, b) { return b.created - a.created; });
+}
+var _j = []; SM_SERVERS.forEach(function (s) { DEMO_EVENTS(s.id).forEach(function (e) { e.name = s.name; _j.push(e); }); });
+_j.sort(function (a, b) { return b.created - a.created; });
+function DEMO_POLL(id) {
+  var d = $.Deferred();
+  setTimeout(function () {
+    var s = SM.servers[id], n = Math.floor(Date.now() / 1000);
+    s.last_check = n;
+    if (s.status !== 'down') { s.last_seen = n; s.latency_ms = Math.max(1, (s.latency_ms || 2) + Math.round(Math.random() * 2 - 1)); }
+    d.resolve({ server: s });
+  }, 700 + Math.random() * 900);
+  return d.promise();
+}
+
+
+/* ── Utilitaires ─────────────────────────────────────────────── */
+function now() { return Math.floor(Date.now() / 1000 + SM.offset); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function dur(sec) {
+  sec = Math.max(0, sec | 0);
+  if (sec < 60) return sec + ' s';
+  if (sec < 3600) return Math.floor(sec / 60) + ' min';
+  if (sec < 86400) return Math.floor(sec / 3600) + ' h ' + Math.floor(sec % 3600 / 60) + ' min';
+  var d = Math.floor(sec / 86400);
+  return d + ' j ' + Math.floor(sec % 86400 / 3600) + ' h';
+}
+function shortDur(sec) {
+  sec = Math.max(0, sec | 0);
+  if (sec < 3600) return Math.floor(sec / 60) + ' min';
+  if (sec < 86400) return Math.floor(sec / 3600) + ' h';
+  return Math.floor(sec / 86400) + ' j';
+}
+function fmtDate(ts) {
+  if (!ts) return '—';
+  return new Date(ts * 1000).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function ago(ts) { return ts ? 'il y a ' + dur(now() - ts) : 'jamais'; }
+function bytes(n) {
+  if (n == null) return '—';
+  var u = ['o', 'Ko', 'Mo', 'Go', 'To'], i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return (n >= 100 || i === 0 ? Math.round(n) : n.toFixed(1)).toString().replace('.', ',') + ' ' + u[i];
+}
+var STATUS = { up: ['En ligne', 'up'], warn: ['Partiel', 'warn'], down: ['Hors ligne', 'down'], unknown: ['Non vérifié', ''] };
+function statusOf(s) { return s.active ? (STATUS[s.status] || STATUS.unknown) : ['Désactivé', 'off']; }
+var SEVERITY = { down: 0, warn: 1, unknown: 2, up: 3 };
+
+/* Dernier redémarrage : valeur réelle (WMI/SNMP) ou estimation. */
+function bootOf(s) {
+  if (s.boot_time) return { ts: s.boot_time, exact: true, src: (s.boot_source || '').toUpperCase() };
+  if (s.up_since && s.status !== 'down') return { ts: s.up_since, exact: false, src: 'estimé' };
+  return null;
+}
+/* Domaine affiché = libellé du compte WMI du serveur (s'il en a un). */
+function domainOf(s) {
+  if (s.uptime_method !== 'wmi' || !s.wmi_account) return '';
+  var a = SM.accounts.find(function (x) { return x.id === s.wmi_account; });
+  return a ? a.label : '';
+}
+function isLate(s) { var b = bootOf(s); return !!(b && s.active && now() - b.ts > SM.rebootDays * 86400); }
+
+function checksHtml(s) {
+  var d = s.details || {}, h = '';
+  if (s.do_ping) {
+    var p = d.ping;
+    h += '<span class="sm-pill ' + (!p || p.ok === null ? 'na' : p.ok ? 'ok' : 'ko') + '" title="' + esc(p && p.error ? p.error : '') + '">ping</span>';
+  }
+  var res = {};
+  (d.ports || []).forEach(function (r) { res[r.port] = r; });
+  (s.ports ? s.ports.split(',') : []).forEach(function (port) {
+    var r = res[port];
+    h += '<span class="sm-pill ' + (!r ? 'na' : r.ok ? 'ok' : 'ko') + '" title="' + esc(r && r.error ? r.error : '') + '">' + esc(port) + '</span>';
+  });
+  return h;
+}
+function bootHtml(s, compact) {
+  var b = bootOf(s);
+  if (!b) {
+    if (s.uptime_method !== 'none' && s.last_error) return '<span class="sm-muted" title="' + esc(s.last_error) + '">Indisponible ⚠</span>';
+    return '<span class="sm-muted">—</span>';
+  }
+  var late = isLate(s);
+  return '<div title="' + esc((b.exact ? 'Démarré le ' : 'En ligne sans interruption depuis le ') + fmtDate(b.ts)) + '">'
+    + (b.exact ? '' : '≥ ') + '<strong>' + esc(ago(b.ts)) + '</strong> '
+    + '<span class="sm-pill ' + (late ? 'late' : 'src') + '">' + esc(late ? '> ' + SM.rebootDays + ' j' : b.src) + '</span>'
+    + (compact ? '' : '<div class="sm-sub">' + esc(fmtDate(b.ts)) + (s.last_error && s.uptime_method !== 'none' ? ' · <span title="' + esc(s.last_error) + '">⚠ dernière lecture échouée</span>' : '') + '</div>')
+    + '</div>';
+}
+function pctBar(used, total, label) {
+  if (!total) return '';
+  var pct = Math.round(used / total * 100);
+  return '<div class="sm-small">' + esc(label) + ' ' + pct + ' %<div class="sm-bar ' + (pct >= 90 ? 'high' : pct >= 75 ? 'mid' : '') + '"><span style="width:' + pct + '%"></span></div></div>';
+}
+/* Sessions utilisateurs ouvertes (WMI) : actives + déconnectées si les
+ * compteurs de performance sont lisibles, sinon total des sessions. */
+function sessionCount(s) {
+  var se = s.details && s.details.sessions;
+  if (!se || s.status === 'down') return null;
+  return se.src === 'perf' ? se.active + se.inactive : se.total;
+}
+function sessionsText(s) {
+  var se = s.details && s.details.sessions;
+  if (sessionCount(s) == null) return '';
+  return se.src === 'perf'
+    ? se.active + ' active' + (se.active > 1 ? 's' : '') + (se.inactive ? ' · ' + se.inactive + ' déconnectée' + (se.inactive > 1 ? 's' : '') : '')
+    : se.total + ' ouverte' + (se.total > 1 ? 's' : '');
+}
+function sessionsHtml(s) {
+  var t = sessionsText(s);
+  return t ? '<span class="sm-small" title="Sessions utilisateurs (Bureau à distance et console)">👤 ' + esc(t) + '</span>' : '<span class="sm-muted">—</span>';
+}
+function resourcesHtml(s) {
+  var d = s.details || {}, h = '';
+  if (d.mem) h += pctBar(d.mem.total - d.mem.free, d.mem.total, 'RAM');
+  if (d.disks && d.disks.length) {
+    var worst = d.disks.slice().sort(function (a, b) { return a.free / a.size - b.free / b.size; })[0];
+    h += pctBar(worst.size - worst.free, worst.size, 'Disque ' + worst.id);
+  }
+  return h || '<span class="sm-muted">—</span>';
+}
+function detailHtml(s) {
+  var d = s.details || {}, st = statusOf(s), b = bootOf(s);
+  var h = '<div class="sm-details">';
+  h += '<div><h4>État</h4><div><span class="sm-dot ' + st[1] + '"></span> <strong>' + esc(st[0]) + '</strong>'
+    + (s.status_since ? ' depuis ' + esc(dur(now() - s.status_since)) : '') + '</div>'
+    + '<div class="sm-sub">Vu en ligne pour la dernière fois : ' + esc(s.last_seen ? fmtDate(s.last_seen) : 'jamais') + '</div>'
+    + '<div class="sm-sub">Dernière vérification : ' + esc(s.last_check ? fmtDate(s.last_check) : 'jamais') + '</div>'
+    + '<div style="margin-top:6px;">' + checksHtml(s) + '</div></div>';
+  h += '<div><h4>Dernier redémarrage</h4>';
+  if (b) {
+    h += '<div><strong>' + esc(fmtDate(b.ts)) + '</strong></div><div class="sm-sub">'
+      + (b.exact ? 'En fonctionnement depuis ' + esc(dur(now() - b.ts)) + ' (lu via ' + esc(b.src) + (d.via ? ' / ' + esc(d.via) : '') + ')'
+                 : 'Estimation : répond sans interruption depuis ' + esc(dur(now() - b.ts)) + '. Choisissez la méthode WMI ou SNMP pour une valeur exacte.')
+      + '</div>';
+    if (d.note) h += '<div class="sm-sub">' + esc(d.note) + '</div>';
+  } else h += '<div class="sm-muted">Inconnu</div>';
+  if (d.os) h += '<div class="sm-sub" style="margin-top:6px;">' + esc(d.os) + '</div>';
+  h += '</div>';
+  if (d.mem || (d.disks && d.disks.length)) {
+    h += '<div><h4>Ressources (dernière lecture)</h4>';
+    if (d.mem) h += '<div class="sm-small">RAM : ' + esc(bytes(d.mem.total - d.mem.free)) + ' / ' + esc(bytes(d.mem.total)) + '</div>';
+    (d.disks || []).forEach(function (k) {
+      h += '<div class="sm-small">' + esc(k.id) + ' : ' + esc(bytes(k.free)) + ' libres sur ' + esc(bytes(k.size)) + '</div>';
+    });
+    h += '</div>';
+  }
+  if (sessionsText(s)) {
+    var se = d.sessions;
+    h += '<div><h4>Sessions utilisateurs</h4><div>👤 <strong>' + esc(sessionsText(s)) + '</strong></div>'
+      + '<div class="sm-sub">' + (se.src === 'perf' ? 'Compteurs de performance des services Bureau à distance.'
+          : 'Sessions ayant un bureau ouvert (actives et déconnectées confondues). Pour distinguer les déconnectées, ajoutez le compte WMI au groupe « Utilisateurs de l\'Analyseur de performances ».')
+      + (se.at ? ' Relevé ' + esc(ago(se.at)) + '.' : '') + '</div></div>';
+  }
+  if (s.last_error) h += '<div><h4>Dernière erreur</h4><div class="sm-err">' + esc(s.last_error) + '</div></div>';
+  h += '<div><h4>Historique</h4><ul class="sm-events" data-events="' + s.id + '"><li class="sm-muted">Chargement…</li></ul></div>';
+  return h + '</div>';
+}
+var EVLABEL = { down: 'Panne', up: 'Retour', warn: 'Dégradé', ok: 'Rétabli', reboot: 'Redémarrage' };
+function loadEvents(id) {
+  var r = { events: DEMO_EVENTS(id) };
+  $('ul[data-events="' + id + '"]').html(r.events.length ? r.events.map(function (e) {
+    return '<li><time>' + esc(fmtDate(e.created)) + '</time><span class="sm-ev ' + esc(e.type) + '">' + esc(EVLABEL[e.type] || e.type) + '</span><span class="sm-muted">' + esc(e.info) + '</span></li>';
+  }).join('') : '<li class="sm-muted">Aucun événement.</li>');
+}
+
+/* ── Vérifications (file d'attente, 4 en parallèle) ──────────── */
+function enqueue(id) {
+  if (SM.polling[id]) return;
+  SM.polling[id] = true;
+  SM.queue.push(id);
+  render();
+  pump();
+}
+function pump() {
+  while (SM.running < 4 && SM.queue.length) {
+    var id = SM.queue.shift();
+    SM.running++;
+    var data = { do: 'poll', id: id };
+    data[SM.csrfName] = SM.csrf;
+    (function (id) {
+      DEMO_POLL(id)
+        .done(function (r) { if (r.server) SM.servers[id] = r.server; })
+        .always(function () { SM.running--; delete SM.polling[id]; render(); pump(); });
+    })(id);
+  }
+}
+function pollStale(all) {
+  SM.order.forEach(function (id) {
+    var s = SM.servers[id];
+    if (s && s.active && (all || !s.last_check || now() - s.last_check >= SM.interval - 15)) enqueue(id);
+  });
+}
+
+/* ── Vue liste ───────────────────────────────────────────────── */
+var listState = { sort: 'status', dir: 1, filter: '', q: '', open: {} };
+function renderSummary() {
+  var c = { all: 0, up: 0, warn: 0, down: 0, old: 0 };
+  SM.order.forEach(function (id) {
+    var s = SM.servers[id];
+    if (!s.active) return;
+    c.all++;
+    if (c[s.status] !== undefined) c[s.status]++;
+    if (isLate(s)) c.old++;
+  });
+  var cards = [['', c.all, 'Serveurs surveillés'], ['up', c.up, 'En ligne'], ['warn', c.warn, 'Partiellement joignables'],
+               ['down', c.down, 'Hors ligne'], ['old', c.old, 'Sans redémarrage depuis > ' + SM.rebootDays + ' j']];
+  $('#sm-summary').html(cards.map(function (k) {
+    return '<div class="sm-stat ' + k[0] + (listState.filter === k[0] && k[0] ? ' active' : '') + '" data-filter="' + k[0] + '"><div class="v">' + k[1] + '</div><div class="l">' + esc(k[2]) + '</div></div>';
+  }).join(''));
+}
+function sortKey(s, k) {
+  var b = bootOf(s);
+  switch (k) {
+    case 'status': return (s.active ? SEVERITY[s.status] : 9) * 1e6 + (isLate(s) ? 0 : 1);
+    case 'name': return s.name.toLowerCase();
+    case 'host': return s.host.split('.').map(function (p) { return ('000' + p).slice(-3); }).join('.');
+    case 'latency': return s.latency_ms == null ? 1e9 : s.latency_ms;
+    case 'uptime': return b ? b.ts : 1e12;
+    case 'check': return -(s.last_check || 0);
+    case 'sessions': var n = sessionCount(s); return n == null ? 1e9 : -n;
+  }
+  return 0;
+}
+function renderList() {
+  renderSummary();
+  var showInactive = $('#sm-show-inactive').is(':checked');
+  var q = listState.q.toLowerCase();
+  var rows = SM.order.map(function (id) { return SM.servers[id]; }).filter(function (s) {
+    if (!s.active && !showInactive) return false;
+    if (listState.filter === 'old' && !isLate(s)) return false;
+    if (listState.filter && listState.filter !== 'old' && s.status !== listState.filter) return false;
+    return !q || (s.name + ' ' + s.host + ' ' + s.role + ' ' + domainOf(s)).toLowerCase().indexOf(q) >= 0;
+  });
+  rows.sort(function (a, b) {
+    var x = sortKey(a, listState.sort), y = sortKey(b, listState.sort);
+    if (x < y) return -listState.dir; if (x > y) return listState.dir;
+    return a.name.localeCompare(b.name);
+  });
+  if (!rows.length) {
+    $('#sm-tbody').html('<tr><td colspan="10" class="sm-empty">' + (SM.order.length ? 'Aucun serveur ne correspond.' : 'Aucun serveur configuré.' + (SM.canManage ? ' <a href="udaf-servers.php?view=config">Ajouter des serveurs</a>' : '')) + '</td></tr>');
+    return;
+  }
+  var h = '';
+  rows.forEach(function (s) {
+    var st = statusOf(s), kind = SM.kinds[s.kind] || SM.kinds.other, busy = SM.polling[s.id];
+    h += '<tr class="sm-row' + (s.active ? '' : ' inactive') + '" data-id="' + s.id + '">'
+      + '<td><span class="sm-dot ' + st[1] + '" title="' + esc(st[0]) + '"></span> <span class="sm-small">' + esc(st[0]) + '</span></td>'
+      + '<td><div class="sm-name"><i class="' + kind[1] + '"></i> ' + esc(s.name) + '</div><div class="sm-sub">' + esc(s.role || kind[0]) + (domainOf(s) ? ' · ' + esc(domainOf(s)) : '') + '</div></td>'
+      + '<td class="sm-host">' + esc(s.host) + '</td>'
+      + '<td>' + checksHtml(s) + '</td>'
+      + '<td>' + (s.latency_ms == null ? '<span class="sm-muted">—</span>' : esc(s.latency_ms) + ' ms') + '</td>'
+      + '<td>' + bootHtml(s) + '</td>'
+      + '<td>' + resourcesHtml(s) + '</td>'
+      + '<td>' + sessionsHtml(s) + '</td>'
+      + '<td class="sm-small" title="' + esc(fmtDate(s.last_check)) + '">' + esc(s.last_check ? ago(s.last_check) : 'jamais') + '</td>'
+      + '<td><button type="button" class="sm-btn small" data-poll="' + s.id + '" ' + (busy ? 'disabled' : '') + ' title="Vérifier maintenant"><i class="icon-refresh' + (busy ? ' sm-spin' : '') + '"></i></button></td>'
+      + '</tr>';
+    if (listState.open[s.id]) h += '<tr class="sm-detail" data-detail="' + s.id + '"><td colspan="10">' + detailHtml(s) + '</td></tr>';
+  });
+  $('#sm-tbody').html(h);
+  Object.keys(listState.open).forEach(function (id) { if (listState.open[id]) loadEvents(id); });
+}
+
+/* ── Vue plan ────────────────────────────────────────────────── */
+var mapState = { editing: false, linking: false, linkFrom: null, sel: null, draft: null, dirty: false };
+function planData() { return mapState.editing ? mapState.draft : SM.plan; }
+function renderMap() {
+  if (!SM.plan) return;
+  var P = planData(), canvas = $('#sm-canvas');
+  canvas.toggleClass('editing', mapState.editing).toggleClass('linking', mapState.linking);
+  var pos = {};
+  P.nodes.forEach(function (n) { if (SM.servers[n.id]) pos[n.id] = n; });
+
+  var svg = '';
+  P.links.forEach(function (l, i) {
+    var a = pos[l[0]], b = pos[l[1]];
+    if (!a || !b) return;
+    var sa = SM.servers[l[0]], sb = SM.servers[l[1]];
+    var worst = Math.min(SEVERITY[sa.status], SEVERITY[sb.status]);
+    var color = worst === 0 ? '#d93025' : worst === 1 ? '#f0a020' : worst === 3 ? '#1e8e4f' : '#9aa3c0';
+    svg += '<line x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '" stroke="' + color + '"' + (worst === 0 ? ' stroke-dasharray="6 5"' : '') + '/>';
+    if (mapState.editing) svg += '<line class="hit" data-link="' + i + '" x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '"><title>Cliquer pour supprimer la liaison</title></line>';
+  });
+  $('#sm-links').html(svg);
+
+  var h = '';
+  (P.labels || []).forEach(function (lb, i) {
+    h += '<div class="sm-label ' + esc(lb.size || 'm') + '" data-label="' + i + '" style="left:' + lb.x + '%;top:' + lb.y + '%">' + esc(lb.text)
+      + '<span class="sz" data-label-size="' + i + '" title="Taille">A</span><span class="rm" data-label-rm="' + i + '" title="Supprimer">✕</span></div>';
+  });
+  P.nodes.forEach(function (n) {
+    var s = SM.servers[n.id];
+    if (!s) return;
+    var st = statusOf(s), kind = SM.kinds[s.kind] || SM.kinds.other, b = bootOf(s), late = isLate(s);
+    h += '<div class="sm-node ' + st[1] + (mapState.sel == s.id || mapState.linkFrom == s.id ? ' sel' : '') + '" data-node="' + s.id + '" style="left:' + n.x + '%;top:' + n.y + '%" title="' + esc(s.name + ' — ' + s.host + ' — ' + st[0]) + '">'
+      + '<div class="ico"><i class="' + kind[1] + (SM.polling[s.id] ? ' sm-spin icon-refresh' : '') + '"></i><span class="rm" data-node-rm="' + s.id + '" title="Retirer du plan">✕</span></div>'
+      + '<div class="lbl">' + esc(s.name) + '</div>'
+      + (b ? '<div class="up-t' + (late ? ' late' : '') + '">↻ ' + (b.exact ? '' : '≥') + esc(shortDur(now() - b.ts))
+          + (sessionCount(s) != null ? ' · 👤 ' + sessionCount(s) : '') + '</div>' : '')
+      + '</div>';
+  });
+  $('#sm-layer').html(h);
+
+  if (mapState.editing) {
+    var placed = {};
+    P.nodes.forEach(function (n) { placed[n.id] = 1; });
+    var free = SM.order.filter(function (id) { return !placed[id]; });
+    $('#sm-palette').html(free.length ? free.map(function (id) {
+      var s = SM.servers[id];
+      return '<li><span><span class="sm-dot ' + statusOf(s)[1] + '"></span> ' + esc(s.name) + ' <span class="sm-muted sm-small">' + esc(s.host) + '</span></span><button type="button" class="sm-btn small" data-place="' + id + '"><i class="icon-plus"></i></button></li>';
+    }).join('') : '<li class="sm-muted">Tous les serveurs sont placés.</li>');
+  }
+  renderPanel();
+}
+function renderPanel() {
+  var s = mapState.sel && SM.servers[mapState.sel];
+  if (!s || mapState.editing) {
+    $('#sm-panel').html('<div class="sm-muted sm-small">' + (mapState.editing
+      ? (mapState.linking ? 'Mode liaison : cliquez sur un premier serveur, puis sur un second pour les relier (ou les délier).' : 'Mode édition : glissez les serveurs et les textes. Les modifications ne sont enregistrées qu\'avec « Enregistrer ».')
+      : 'Cliquez sur un serveur du plan pour afficher son détail.') + '</div>');
+    return;
+  }
+  var kind = SM.kinds[s.kind] || SM.kinds.other;
+  $('#sm-panel').html('<h3><i class="' + kind[1] + '"></i> ' + esc(s.name) + '</h3><div class="sm-host" style="margin-bottom:8px;">' + esc(s.host) + (s.role ? ' · ' + esc(s.role) : '') + '</div>'
+    + detailHtml(s).replace('class="sm-details"', 'class="sm-details" style="grid-template-columns:1fr"')
+    + '<button type="button" class="sm-btn small" data-poll="' + s.id + '" ' + (SM.polling[s.id] ? 'disabled' : '') + '><i class="icon-refresh"></i> Vérifier maintenant</button>');
+  loadEvents(s.id);
+}
+function startEdit() {
+  mapState.editing = true; mapState.linking = false; mapState.linkFrom = null; mapState.dirty = false;
+  mapState.draft = JSON.parse(JSON.stringify(SM.plan));
+  $('#sm-edit-toggle').hide(); $('#sm-edit-tools').css('display', 'inline-flex'); $('#sm-plan-admin, #sm-palette-card').show();
+  renderMap();
+}
+function stopEdit() {
+  mapState.editing = false; mapState.linking = false; mapState.linkFrom = null; mapState.dirty = false;
+  $('#sm-edit-toggle').show(); $('#sm-edit-tools').hide(); $('#sm-plan-admin, #sm-palette-card').hide(); $('#sm-link-mode').removeClass('on');
+  renderMap();
+}
+function markDirty() { mapState.dirty = true; }
+function canvasPoint(e) {
+  var r = document.getElementById('sm-canvas').getBoundingClientRect();
+  return { x: Math.max(1, Math.min(99, (e.clientX - r.left) / r.width * 100)), y: Math.max(1, Math.min(99, (e.clientY - r.top) / r.height * 100)) };
+}
+
+/* ── Rendu global ────────────────────────────────────────────── */
+function render() {
+  if (SM.view === 'list') renderList();
+  else if (SM.view === 'map') {
+    // Pas de re-rendu pendant un glisser (il casserait le geste en cours).
+    if (!drag) renderMap();
+  }
+  var last = 0;
+  SM.order.forEach(function (id) { last = Math.max(last, SM.servers[id].last_check || 0); });
+  var pending = SM.queue.length + SM.running;
+  $('#sm-lastpoll').text(pending ? '· vérification en cours (' + pending + ')…' : (last ? '· dernière vérification ' + ago(last) : ''));
+  $('#sm-poll-all').prop('disabled', pending > 0);
+}
+var drag = null;
+
+/* ── Événements ──────────────────────────────────────────────── */
+$(root).on('click', '#sm-poll-all', function () { pollStale(true); });
+$(root).on('click', '[data-poll]', function (e) { e.stopPropagation(); enqueue(+$(this).data('poll')); });
+
+// Liste
+$(root).on('click', '.sm-stat', function () {
+  var f = $(this).data('filter') || '';
+  listState.filter = listState.filter === f ? '' : f;
+  renderList();
+});
+$(root).on('input', '#sm-search', function () { listState.q = this.value; renderList(); });
+$(root).on('change', '#sm-show-inactive', renderList);
+$(root).on('click', 'th[data-sort]', function () {
+  var k = $(this).data('sort');
+  listState.dir = listState.sort === k ? -listState.dir : 1;
+  listState.sort = k;
+  renderList();
+});
+$(root).on('click', 'tr.sm-row', function () {
+  var id = $(this).data('id');
+  listState.open[id] = !listState.open[id];
+  renderList();
+});
+$(root).find('time[data-ts]').each(function () { this.textContent = fmtDate(+this.getAttribute('data-ts')); });
+$(root).find('[data-evtype]').each(function () { this.textContent = EVLABEL[this.getAttribute('data-evtype')] || ''; });
+
+// Plan — consultation
+$(root).on('click', '.sm-node', function (e) {
+  var id = +$(this).data('node');
+  if (mapState.editing) {
+    if (!mapState.linking || $(e.target).closest('.rm').length) return;
+    if (!mapState.linkFrom) { mapState.linkFrom = id; renderMap(); return; }
+    if (mapState.linkFrom !== id) {
+      var a = Math.min(id, mapState.linkFrom), b = Math.max(id, mapState.linkFrom), L = mapState.draft.links;
+      var idx = L.findIndex(function (l) { return Math.min(l[0], l[1]) === a && Math.max(l[0], l[1]) === b; });
+      if (idx >= 0) L.splice(idx, 1); else L.push([a, b]);
+      markDirty();
+    }
+    mapState.linkFrom = null;
+    renderMap();
+    return;
+  }
+  mapState.sel = mapState.sel === id ? null : id;
+  renderMap();
+});
+
+// Plan — édition
+$(root).on('click', '#sm-edit-toggle', startEdit);
+$(root).on('click', '#sm-cancel', function () {
+  if (mapState.dirty && !confirm('Abandonner les modifications non enregistrées ?')) return;
+  stopEdit();
+});
+$(root).on('click', '#sm-link-mode', function () {
+  mapState.linking = !mapState.linking; mapState.linkFrom = null;
+  $(this).toggleClass('on', mapState.linking);
+  renderMap();
+});
+$(root).on('click', '#sm-add-label', function () {
+  var t = prompt('Texte à afficher sur le plan (ex. « Baie 1 », « Salle serveur », « Site Agen ») :');
+  if (!t || !t.trim()) return;
+  mapState.draft.labels.push({ x: 50, y: 8 + (mapState.draft.labels.length % 8) * 4, text: t.trim().slice(0, 120), size: 'm' });
+  markDirty(); renderMap();
+});
+$(root).on('click', '[data-place]', function () {
+  var id = +$(this).data('place'), n = mapState.draft.nodes.length;
+  mapState.draft.nodes.push({ id: id, x: 12 + (n * 11) % 76, y: 15 + Math.floor(n / 7) * 14 % 70 });
+  markDirty(); renderMap();
+});
+$(root).on('click', '[data-node-rm]', function (e) {
+  e.stopPropagation();
+  var id = +$(this).data('node-rm'), P = mapState.draft;
+  P.nodes = P.nodes.filter(function (n) { return n.id !== id; });
+  P.links = P.links.filter(function (l) { return l[0] !== id && l[1] !== id; });
+  markDirty(); renderMap();
+});
+$(root).on('click', '[data-label-rm]', function (e) {
+  e.stopPropagation();
+  mapState.draft.labels.splice(+$(this).data('label-rm'), 1);
+  markDirty(); renderMap();
+});
+$(root).on('click', '[data-label-size]', function (e) {
+  e.stopPropagation();
+  var lb = mapState.draft.labels[+$(this).data('label-size')];
+  lb.size = { s: 'm', m: 'l', l: 's' }[lb.size || 'm'];
+  markDirty(); renderMap();
+});
+$(root).on('dblclick', '.sm-label', function () {
+  if (!mapState.editing) return;
+  var lb = mapState.draft.labels[+$(this).data('label')];
+  var t = prompt('Modifier le texte :', lb.text);
+  if (t === null) return;
+  if (!t.trim()) mapState.draft.labels.splice(+$(this).data('label'), 1); else lb.text = t.trim().slice(0, 120);
+  markDirty(); renderMap();
+});
+$(root).on('click', 'line.hit', function () {
+  mapState.draft.links.splice(+this.getAttribute('data-link'), 1);
+  markDirty(); renderMap();
+});
+$(root).on('pointerdown', '.sm-node, .sm-label', function (e) {
+  if (!mapState.editing || mapState.linking || $(e.target).closest('.rm, .sz').length) return;
+  var el = $(this), isNode = el.is('.sm-node');
+  var item = isNode
+    ? mapState.draft.nodes.find(function (n) { return n.id === +el.data('node'); })
+    : mapState.draft.labels[+el.data('label')];
+  if (!item) return;
+  drag = { el: this, item: item, moved: false };
+  this.setPointerCapture && this.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+$(root).on('pointermove', function (e) {
+  if (!drag) return;
+  var p = canvasPoint(e.originalEvent);
+  drag.item.x = Math.round(p.x * 10) / 10; drag.item.y = Math.round(p.y * 10) / 10;
+  drag.el.style.left = drag.item.x + '%'; drag.el.style.top = drag.item.y + '%';
+  drag.moved = true;
+});
+$(root).on('pointerup pointercancel', function () {
+  if (!drag) return;
+  var moved = drag.moved;
+  drag = null;
+  if (moved) { markDirty(); renderMap(); }
+});
+$(root).on('click', '#sm-save', function () {
+  var btn = $(this).prop('disabled', true), P = mapState.draft;
+  var data = { do: 'plan_save', plan: SM.plan.id, nodes: JSON.stringify(P.nodes), links: JSON.stringify(P.links), labels: JSON.stringify(P.labels) };
+  data[SM.csrfName] = SM.csrf;
+  $.Deferred().resolve({}).promise().done(function () {
+    SM.plan = JSON.parse(JSON.stringify(P));
+    stopEdit();
+  }).fail(function () { alert("L'enregistrement du plan a échoué."); }).always(function () { btn.prop('disabled', false); });
+});
+window.addEventListener('beforeunload', function (e) {
+  if (document.body.contains(root) && mapState.editing && mapState.dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// Configuration
+var methodSel = $('#sm-method');
+function toggleCommunity() {
+  $('#sm-community-wrap').toggle(methodSel.val() === 'snmp');
+  $('#sm-account-wrap').toggle(methodSel.val() === 'wmi');
+}
+methodSel.on('change', toggleCommunity); toggleCommunity();
+$(root).on('click', '[data-ports]', function () { $('#sm-server-form [name=ports]').val(String($(this).data('ports')).split(',').filter(Boolean).join(', ')); });
+$(root).on('click', '[data-edit]', function () {
+  var s = SM.servers[+$(this).data('edit')], f = $('#sm-server-form');
+  f.find('[name=id]').val(s.id); f.find('[name=name]').val(s.name); f.find('[name=host]').val(s.host);
+  f.find('[name=kind]').val(s.kind); f.find('[name=role]').val(s.role);
+  f.find('[name=ports]').val(s.ports ? s.ports.split(',').join(', ') : '');
+  f.find('[name=do_ping]').prop('checked', !!s.do_ping); f.find('[name=active]').prop('checked', !!s.active);
+  f.find('[name=uptime_method]').val(s.uptime_method); f.find('[name=snmp_community]').val('').attr('placeholder', 'inchangée');
+  f.find('[name=wmi_account]').val(String(s.wmi_account));
+  toggleCommunity();
+  $('#sm-form-title').text('Modifier « ' + s.name + ' »');
+  f[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+$(root).on('click', '#sm-form-reset', function () {
+  var f = $('#sm-server-form');
+  f[0].reset(); f.find('[name=id]').val('0'); f.find('[name=snmp_community]').attr('placeholder', 'public');
+  f.find('input[type=text]').val('');
+  f.find('[name=do_ping], [name=active]').prop('checked', true);
+  toggleCommunity();
+  $('#sm-form-title').text('Ajouter un serveur');
+});
+// Comptes WMI
+function accountFormMode(a) {
+  var f = $('#sm-account-form');
+  f.find('[name=account_id]').val(a ? a.id : 0);
+  f.find('[name=label]').val(a ? a.label : '');
+  f.find('[name=user]').val(a ? a.user : '');
+  f.find('[name=pass]').val('');
+  $('#sm-account-pass-hint').text(a ? '(laisser vide pour garder l\'actuel)' : '*');
+  $('#sm-account-submit').text(a ? 'Enregistrer le compte' : 'Ajouter le compte');
+}
+$(root).on('click', '[data-edit-account]', function () {
+  var id = +$(this).data('edit-account');
+  var a = SM.accounts.find(function (x) { return x.id === id; });
+  if (!a) return;
+  accountFormMode(a);
+  $('#sm-account-form')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+$(root).on('click', '#sm-account-reset', function () { accountFormMode(null); });
+if ($('#sm-account-form').length) {
+  var acc0 = +$('#sm-account-form [name=account_id]').val();
+  $('#sm-account-pass-hint').text(acc0 ? '(laisser vide pour garder l\'actuel)' : '*');
+  if (acc0) $('#sm-account-submit').text('Enregistrer le compte');
+}
+$(root).on('click', '[data-test]', function () {
+  var id = +$(this).data('test'), btn = $(this).prop('disabled', true), out = $('#sm-test-out').show();
+  out.text('Vérification de ' + SM.servers[id].name + ' en cours (jusqu\'à une minute pour WMI)…');
+  var data = { do: 'poll', id: id };
+  data[SM.csrfName] = SM.csrf;
+  $.ajax({ url: 'udaf-servers.php', type: 'POST', data: data, dataType: 'json', timeout: 120000 }).done(function (r) {
+    var s = r.server; SM.servers[id] = s;
+    var d = s.details || {}, b = bootOf(s), lines = [];
+    lines.push(s.name + ' (' + s.host + ') : ' + statusOf(s)[0]);
+    if (d.ping) lines.push('  ping : ' + (d.ping.ok ? 'OK' + (d.ping.ms != null ? ' (' + d.ping.ms + ' ms)' : '') : 'ÉCHEC — ' + (d.ping.error || '')));
+    (d.ports || []).forEach(function (p) { lines.push('  port ' + p.port + ' : ' + (p.ok ? 'ouvert (' + p.ms + ' ms)' : 'FERMÉ — ' + (p.error || ''))); });
+    lines.push('  dernier redémarrage : ' + (b ? fmtDate(b.ts) + ' (' + b.src + ')' : 'inconnu'));
+    if (s.uptime_method === 'wmi') lines.push('  sessions utilisateurs : ' + (sessionsText(s) || 'non lues')
+      + (d.sessions && d.sessions.src === 'process' ? ' (sans distinction actives/déconnectées)' : ''));
+    if (d.mem) lines.push('  RAM : ' + bytes(d.mem.total - d.mem.free) + ' utilisés / ' + bytes(d.mem.total));
+    (d.disks || []).forEach(function (k) { lines.push('  disque ' + k.id + ' : ' + bytes(k.free) + ' libres / ' + bytes(k.size)); });
+    if (s.uptime_method === 'wmi') {
+      var acc = SM.accounts.find(function (x) { return x.id === s.wmi_account; });
+      lines.push('  compte WMI : ' + (acc ? acc.label + ' (' + acc.user + ')' : 'aucun identifiant (compte du service)'));
+    }
+    if (d.os) lines.push('  système : ' + d.os + (d.via ? ' — via ' + d.via : ''));
+    if (s.last_error) lines.push('  ERREUR : ' + s.last_error);
+    out.text(lines.join('\n'));
+  }).fail(function (x) { out.text('Échec de la requête (' + x.status + ').'); }).always(function () { btn.prop('disabled', false); });
+});
+
+$(root).on('click', '[data-view]', function (e) {
+  e.preventDefault();
+  if (mapState.editing && !confirm('Abandonner les modifications non enregistrées ?')) return;
+  if (mapState.editing) stopEdit();
+  SM.view = $(this).data('view');
+  $('.sm-tabs a').removeClass('active'); $(this).addClass('active');
+  $('#sm-view-list').toggle(SM.view === 'list'); $('#sm-view-map').toggle(SM.view === 'map');
+  render();
+});
+/* ── Démarrage + rafraîchissement ─────────────────────────────── */
+$('#sm-journal').html(_j.slice(0, 12).map(function (e) { return '<li><time>' + esc(fmtDate(e.created)) + '</time><span class="sm-ev ' + esc(e.type) + '">' + esc(EVLABEL[e.type]) + '</span> <strong>' + esc(e.name) + '</strong> <span class="sm-muted">' + esc(e.info) + '</span></li>'; }).join(''));
+render();
+if (SM.view === 'map' && SM.plan && SM.canManage && false) startEdit();
+if (SM.view !== 'config') pollStale(false);
+var timer = setInterval(function () {
+  // Navigation pjax : la page a été remplacée, on s'arrête.
+  if (!document.body.contains(root)) { clearInterval(timer); return; }
+  if (SM.view === 'config') return;
+  if (!drag && !(SM.view === 'map' && mapState.editing)) pollStale(false);
+  render();
+}, 30000);
+})();
+
+</script>
+<script>if(location.hash==='#map'){$('[data-view=map]').first().trigger('click');}</script></body></html>

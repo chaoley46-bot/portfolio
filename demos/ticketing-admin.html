@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Démo — Panneau agent (osTicket)</title>
+<link rel="stylesheet" href="vendor/font-awesome.min.css">
+<style>
+:root{--blue:rgb(1,25,115);--orange:rgb(254,67,41);--bg:#f4f6fb;--border:rgba(1,25,115,.13);--muted:rgba(1,25,115,.55)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--blue);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px}
+.demo{background:var(--orange);color:#fff;text-align:center;font-size:12px;font-weight:700;padding:5px}
+header{background:var(--blue);color:#fff;display:flex;align-items:center;padding:0 24px;gap:22px;flex-wrap:wrap}
+.logo{font-size:19px;font-weight:800;letter-spacing:1px;padding:13px 0}.logo b{color:var(--orange)}
+header nav{display:flex;gap:2px}header nav a{color:#fff;opacity:.8;text-decoration:none;padding:15px 13px;font-weight:600;font-size:13.5px;border-bottom:3px solid transparent}
+header nav a.on{opacity:1;border-color:var(--orange)}.who{margin-left:auto;font-size:13px;opacity:.9}
+.wrap{max-width:1240px;margin:20px auto;padding:0 18px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 16px}.stat b{font-size:26px;display:block}.stat span{font-size:12.5px;color:var(--muted)}
+.bar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.bar select,.bar input{padding:8px 11px;border:1px solid var(--border);border-radius:9px;font:inherit;color:var(--blue);background:#fff}.bar input{min-width:230px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button{border:1px solid var(--border);background:#fff;color:var(--blue);padding:7px 15px;border-radius:50px;font:inherit;font-weight:700;cursor:pointer}
+.tabs button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--border);font-size:13.5px;vertical-align:middle}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:#fafbff}
+tbody tr{cursor:pointer}tbody tr:hover td{background:#f7f9ff}tr.unread td:nth-child(3){font-weight:800}
+.tag{display:inline-block;border-radius:50px;padding:2px 10px;font-size:11.5px;font-weight:700}
+.t-open{background:#fdecea;color:#a32d2d}.t-prog{background:#fff3da;color:#8a5a00}.t-res{background:#e6f6ee;color:#0a6040}.t-closed{background:#e8f0fe;color:#1d56b0}
+.p-hi{background:var(--orange);color:#fff}.p-lo{background:#eef0f6;color:#4b5679}
+.ico{color:var(--muted);margin-right:6px}
+.back{border:0;background:none;color:var(--blue);font:inherit;font-weight:700;cursor:pointer;padding:0;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 310px;gap:16px}
+.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.entry{border:1px solid var(--border);border-radius:11px;margin-bottom:10px;overflow:hidden}
+.entry-h{display:flex;justify-content:space-between;background:#fafbff;padding:8px 13px;font-size:12.5px;color:var(--muted)}.entry-h b{color:var(--blue)}
+.entry-b{padding:11px 13px;line-height:1.5}.entry.note .entry-h{background:#fff6dc}.entry.staff .entry-h{background:#eaf0ff}
+dl{margin:0;display:grid;grid-template-columns:100px 1fr;gap:7px 8px;font-size:13px}dt{color:var(--muted)}dd{margin:0;font-weight:600}
+select.f,textarea.f{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font:inherit;color:var(--blue);background:#fff}
+textarea.f{margin:8px 0}.btn{border:0;border-radius:50px;padding:9px 20px;font:inherit;font-weight:700;cursor:pointer;background:var(--blue);color:#fff}.btn:hover{background:var(--orange)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0a6040;color:#fff;padding:10px 20px;border-radius:50px;font-weight:700;font-size:13px;opacity:0;transition:.25s;pointer-events:none}.toast.show{opacity:1}
+@media(max-width:860px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}th:nth-child(5),td:nth-child(5),th:nth-child(6),td:nth-child(6){display:none}}
+</style></head><body>
+<div class="demo">DÉMONSTRATION — panneau agent osTicket personnalisé · tickets et utilisateurs fictifs</div>
+<header><div class="logo">UDAF <b>47</b> · Agents</div>
+<nav><a href="#" class="on">Tickets</a><a href="#" onclick="return false">Utilisateurs</a><a href="#" onclick="return false">Tâches</a><a href="#" onclick="return false">Inventaire</a><a href="#" onclick="return false">Supervision</a><a href="#" onclick="return false">Base de connaissances</a></nav>
+<div class="who"><i class="icon-user"></i> Paolo S. · Agent</div></header>
+<div class="wrap" id="root"></div><div class="toast" id="toast"></div>
+<script>
+var AG=['Paolo S.','Arnaud A.','— Non assigné —'];
+var T=[
+ {id:1,n:583207,subj:'Session Windows impossible : « profil temporaire »',st:'Ouvert',pr:'Bloquant',from:'Julien Marchand',mail:'j.marchand@exemple.fr',site:'Agen',topic:"Demande d'assistance",ag:'— Non assigné —',up:'Il y a 6 min',unread:1,
+  th:[{w:'Julien Marchand',t:'02/11/2026 15:21',b:'Depuis ce matin, mon poste me connecte avec un profil temporaire et je ne retrouve plus mes documents. Je ne peux plus travailler sur mes dossiers.'}]},
+ {id:2,n:583206,subj:'Demande de matériel : Casque',st:'En cours',pr:'Non bloquant',from:'Sophie Lemaire',mail:'s.lemaire@exemple.fr',site:'Marmande',topic:'Demande de matériel',ag:'Paolo S.',up:'Il y a 1 h',
+  th:[{w:'Sophie Lemaire',t:'02/11/2026 13:58',b:'Bonjour, je souhaiterais un casque avec micro pour les visioconférences.'},{w:'Paolo S. (agent)',t:'02/11/2026 14:30',b:'Casque réservé (stock : 3 → 2). Je vous l\'envoie par la navette de jeudi.',s:1}]},
+ {id:3,n:583205,subj:'Mail frauduleux signalé : « Votre colis est bloqué »',st:'Ouvert',pr:'Non bloquant',from:'Marc Petit',mail:'m.petit@exemple.fr',site:'Fumel',topic:'Mail frauduleux',ag:'Arnaud A.',up:'Il y a 3 h',
+  th:[{w:'Marc Petit',t:'02/11/2026 12:40',b:'J\'ai reçu un mail « colis bloqué » avec un lien. Je n\'ai pas cliqué.'},{w:'Arnaud A. (note interne)',t:'02/11/2026 12:55',b:'Expéditeur usurpé (domaine proche). Vérifier le filtrage et supprimer des autres boîtes.',note:1}]}
+];
+var sel=null,filt='all',toastT;
+function cls(s){return s==='Ouvert'?'t-open':s==='En cours'?'t-prog':s==='Résolu'?'t-res':'t-closed'}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('show')},2200)}
+function list(){
+ var o=T.filter(function(t){return t.st==='Ouvert'||t.st==='En cours'}).length,b=T.filter(function(t){return t.pr==='Bloquant'&&t.st!=='Résolu'}).length;
+ var rows=T.filter(function(t){return filt==='all'||(filt==='mine'&&t.ag==='Paolo S.')||(filt==='free'&&t.ag.indexOf('Non')>=0)});
+ document.getElementById('root').innerHTML='<div class="stats"><div class="stat"><b>'+o+'</b><span>Tickets actifs</span></div><div class="stat"><b style="color:var(--orange)">'+b+'</b><span>Bloquants</span></div><div class="stat"><b>'+T.filter(function(t){return t.ag==='Paolo S.'}).length+'</b><span>Qui me sont assignés</span></div><div class="stat"><b>'+T.filter(function(t){return t.ag.indexOf('Non')>=0}).length+'</b><span>Non assignés</span></div></div>'+
+ '<div class="tabs"><button data-f="all" class="'+(filt==='all'?'on':'')+'">Tous</button><button data-f="mine" class="'+(filt==='mine'?'on':'')+'">Mes tickets</button><button data-f="free" class="'+(filt==='free'?'on':'')+'">Non assignés</button></div>'+
+ '<table><thead><tr><th>N°</th><th>Mis à jour</th><th>Sujet</th><th>De</th><th>Type</th><th>Priorité</th><th>Statut</th><th>Assigné à</th></tr></thead><tbody>'+
+ rows.map(function(t){return '<tr data-id="'+t.id+'" class="'+(t.unread?'unread':'')+'"><td>#'+t.n+'</td><td>'+t.up+'</td><td>'+t.subj+'</td><td>'+t.from+'</td><td>'+t.topic+'</td><td><span class="tag '+(t.pr==='Bloquant'?'p-hi':'p-lo')+'">'+t.pr+'</span></td><td><span class="tag '+cls(t.st)+'">'+t.st+'</span></td><td>'+t.ag+'</td></tr>'}).join('')+'</tbody></table>';
+ [].forEach.call(document.querySelectorAll('.tabs button'),function(b){b.onclick=function(){filt=b.dataset.f;list()}});
+ [].forEach.call(document.querySelectorAll('tbody tr'),function(r){r.onclick=function(){sel=+r.dataset.id;T.filter(function(t){return t.id===sel})[0].unread=0;detail()}});
+}
+function detail(){
+ var t=T.filter(function(x){return x.id===sel})[0];
+ document.getElementById('root').innerHTML='<button class="back" id="bk"><i class="icon-arrow-left"></i> Retour à la liste</button><h2 style="margin:0 0 4px">#'+t.n+' — '+t.subj+'</h2><div style="margin-bottom:14px"><span class="tag '+cls(t.st)+'">'+t.st+'</span> <span class="tag '+(t.pr==='Bloquant'?'p-hi':'p-lo')+'">'+t.pr+'</span></div>'+
+ '<div class="grid"><div><div class="card"><h3>Fil de discussion</h3>'+t.th.map(function(e){return '<div class="entry '+(e.note?'note':e.s?'staff':'')+'"><div class="entry-h"><b>'+(e.note?'<i class="icon-lock"></i> ':'')+e.w+'</b><span>'+e.t+'</span></div><div class="entry-b">'+e.b+'</div></div>'}).join('')+'</div>'+
+ '<div class="card"><h3>Répondre</h3><select class="f" id="kind"><option>Réponse à l\'utilisateur</option><option>Note interne</option></select><textarea class="f" id="rep" rows="4" placeholder="Votre message…"></textarea><button class="btn" id="snd">Envoyer</button></div></div>'+
+ '<div><div class="card"><h3>Informations</h3><dl><dt>Utilisateur</dt><dd>'+t.from+'</dd><dt>E-mail</dt><dd>'+t.mail+'</dd><dt>Site</dt><dd>'+t.site+'</dd><dt>Type</dt><dd>'+t.topic+'</dd></dl></div>'+
+ '<div class="card"><h3>Traitement</h3><label style="font-size:12.5px;font-weight:700">Statut</label><select class="f" id="st">'+['Ouvert','En cours','Résolu','Fermé'].map(function(s){return '<option'+(s===t.st?' selected':'')+'>'+s+'</option>'}).join('')+'</select><label style="font-size:12.5px;font-weight:700;display:block;margin-top:10px">Assigné à</label><select class="f" id="ag">'+AG.map(function(s){return '<option'+(s===t.ag?' selected':'')+'>'+s+'</option>'}).join('')+'</select></div></div></div>';
+ document.getElementById('bk').onclick=list;
+ document.getElementById('st').onchange=function(){t.st=this.value;t.up='À l\'instant';toast('Statut : '+t.st);detail()};
+ document.getElementById('ag').onchange=function(){t.ag=this.value;t.up='À l\'instant';toast('Assigné à '+t.ag);detail()};
+ document.getElementById('snd').onclick=function(){var v=document.getElementById('rep').value.trim();if(!v)return;var n=document.getElementById('kind').selectedIndex===1;
+  t.th.push({w:'Paolo S. '+(n?'(note interne)':'(agent)'),t:'à l\'instant',b:v.replace(/</g,'&lt;'),note:n,s:!n});t.up='À l\'instant';if(!n&&t.st==='Ouvert')t.st='En cours';toast(n?'Note interne ajoutée':'Réponse envoyée à '+t.from);detail()};
+}
+list();
+</script></body></html>
