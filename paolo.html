@@ -233,6 +233,22 @@
   .cert-body p { font-size: 13px; color: var(--muted); line-height: 1.5; }
   .cert-link { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--accent); font-weight: 600; text-decoration: none; }
   .cert-link:hover { text-decoration: underline; }
+  .cert-group { margin-top: 16px; background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .cert-group summary { list-style: none; cursor: pointer; display: flex; gap: 18px; align-items: center; padding: 20px 28px; }
+  .cert-group summary::-webkit-details-marker { display: none; }
+  .cert-group summary:hover { background: var(--accent-soft); }
+  .cert-group summary .cert-body { flex: 1; }
+  .cert-count { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: #b4532a; background: #fbe9e2; border-radius: 10px; padding: 1px 8px; vertical-align: 1px; }
+  .cert-chevron { width: 20px; height: 20px; color: var(--muted); flex-shrink: 0; transition: transform 0.25s; }
+  .cert-group[open] .cert-chevron { transform: rotate(180deg); }
+  .cert-group-list { list-style: none; margin: 0; padding: 0 28px 8px; border-top: 1px solid var(--border); }
+  .cert-group-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px 24px; flex-wrap: wrap; padding: 16px 0 16px 70px; border-bottom: 1px solid var(--border); }
+  .cert-group-list li:last-child { border-bottom: 0; }
+  .cert-group-list h4 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .cert-group-list p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .cert-group-links { display: flex; gap: 16px; }
+  .cert-group-links .cert-link { margin-top: 0; }
+  @media (max-width: 700px) { .cert-group summary { padding: 18px 20px; } .cert-group-list { padding: 0 20px 6px; } .cert-group-list li { padding-left: 0; } }
 
   #stack { background: var(--white); }
   .stack-categories { display: flex; flex-direction: column; gap: 32px; }
@@ -555,42 +571,6 @@
         <a href="https://chaoley46-bot.github.io/portfolio/MOOCAttestation.pdf" target="_blank" rel="noopener" class="cert-link">Voir l'attestation →</a>
       </div>
     </div>
-    <!-- Claude Academy — obtenu -->
-    <div class="cert-card">
-      <div class="cert-icon" style="background:transparent;">
-        <img src="https://cdn.simpleicons.org/claude/D97757" alt="Claude Academy" style="width:40px;height:40px;object-fit:contain;">
-      </div>
-      <div class="cert-body">
-        <h4>Claude Code in Action</h4>
-        <p>Claude Academy — 2026</p>
-        <div style="display:flex;flex-wrap:wrap;gap:4px 14px;"><a href="https://chaoley46-bot.github.io/portfolio/ClaudeCodeInAction.pdf" target="_blank" rel="noopener" class="cert-link">Voir le badge →</a>
-        <a href="https://academy.claude.com/verify/314850ff5ce332ddf9e2c93620574a23" target="_blank" rel="noopener" class="cert-link">Vérifier →</a></div>
-      </div>
-    </div>
-    <!-- Claude Academy — Claude 101 — obtenu -->
-    <div class="cert-card">
-      <div class="cert-icon" style="background:transparent;">
-        <img src="https://cdn.simpleicons.org/claude/D97757" alt="Claude Academy" style="width:40px;height:40px;object-fit:contain;">
-      </div>
-      <div class="cert-body">
-        <h4>Claude 101</h4>
-        <p>Claude Academy — 2026</p>
-        <div style="display:flex;flex-wrap:wrap;gap:4px 14px;"><a href="https://chaoley46-bot.github.io/portfolio/Claude101.pdf" target="_blank" rel="noopener" class="cert-link">Voir le badge →</a>
-        <a href="https://academy.claude.com/verify/64fe93713365fd3d722d501736774f77" target="_blank" rel="noopener" class="cert-link">Vérifier →</a></div>
-      </div>
-    </div>
-    <!-- Claude Academy — Deploying Claude Enterprise — obtenu -->
-    <div class="cert-card">
-      <div class="cert-icon" style="background:transparent;">
-        <img src="https://cdn.simpleicons.org/claude/D97757" alt="Claude Academy" style="width:40px;height:40px;object-fit:contain;">
-      </div>
-      <div class="cert-body">
-        <h4>Deploying Claude Enterprise with confidence</h4>
-        <p>Claude Academy — 2026</p>
-        <div style="display:flex;flex-wrap:wrap;gap:4px 14px;"><a href="https://chaoley46-bot.github.io/portfolio/ClaudeEnterprise.pdf" target="_blank" rel="noopener" class="cert-link">Voir le badge →</a>
-        <a href="https://academy.claude.com/verify/fd763130b5d795f83d99fa9c867c0d55" target="_blank" rel="noopener" class="cert-link">Vérifier →</a></div>
-      </div>
-    </div>
     <!-- CNIL — en cours -->
     <div class="cert-card" style="border-color:#f59e0b44;background:linear-gradient(135deg,#fffbeb 0%,var(--white) 100%);">
       <div class="cert-icon" style="background:#fef3c7;">
@@ -613,6 +593,28 @@
       <div class="cert-body"><h4>À venir</h4><p>Certification en cours de préparation</p></div>
     </div>
   </div>
+  <!-- Claude Academy : liste déroulante -->
+  <details class="cert-group fade-up">
+    <summary>
+      <div class="cert-icon" style="background:transparent;"><img src="https://cdn.simpleicons.org/claude/D97757" alt="Claude Academy"></div>
+      <div class="cert-body"><h4>Certifications Claude Academy <span class="cert-count">3</span></h4><p>Badges de fin de cours délivrés par Anthropic — 2026</p></div>
+      <svg class="cert-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </summary>
+    <ul class="cert-group-list">
+      <li>
+        <div><h4>Claude Code in Action</h4><p>Utiliser Claude Code au quotidien : contexte, plan, hooks, mode auto, MCP</p></div>
+        <div class="cert-group-links"><a href="https://chaoley46-bot.github.io/portfolio/ClaudeCodeInAction.pdf" target="_blank" rel="noopener" class="cert-link">Voir le badge →</a><a href="https://academy.claude.com/verify/314850ff5ce332ddf9e2c93620574a23" target="_blank" rel="noopener" class="cert-link">Vérifier →</a></div>
+      </li>
+      <li>
+        <div><h4>Claude 101</h4><p>Les bases de Claude : conversations, projets, artefacts et bonnes pratiques</p></div>
+        <div class="cert-group-links"><a href="https://chaoley46-bot.github.io/portfolio/Claude101.pdf" target="_blank" rel="noopener" class="cert-link">Voir le badge →</a><a href="https://academy.claude.com/verify/64fe93713365fd3d722d501736774f77" target="_blank" rel="noopener" class="cert-link">Vérifier →</a></div>
+      </li>
+      <li>
+        <div><h4>Deploying Claude Enterprise with confidence</h4><p>Les cinq décisions qui encadrent un déploiement en entreprise</p></div>
+        <div class="cert-group-links"><a href="https://chaoley46-bot.github.io/portfolio/ClaudeEnterprise.pdf" target="_blank" rel="noopener" class="cert-link">Voir le badge →</a><a href="https://academy.claude.com/verify/fd763130b5d795f83d99fa9c867c0d55" target="_blank" rel="noopener" class="cert-link">Vérifier →</a></div>
+      </li>
+    </ul>
+  </details>
 </section>
   <!-- STACK TECHNIQUE -->
   <section id="stack">
