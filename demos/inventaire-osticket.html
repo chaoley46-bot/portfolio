@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Démo — Inventaire (panneau agent osTicket)</title>
+<link rel="stylesheet" href="vendor/font-awesome.min.css">
+<style>
+html,body{margin:0;background:#f4f6fb;color:rgb(1,25,115);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px}
+*{box-sizing:border-box}
+.demo{background:rgb(254,67,41);color:#fff;text-align:center;font-size:12px;font-weight:700;padding:5px}
+header{background:rgb(1,25,115);color:#fff;display:flex;align-items:center;padding:0 24px;gap:22px;flex-wrap:wrap}
+.logo{font-size:19px;font-weight:800;letter-spacing:1px;padding:13px 0}.logo b{color:rgb(254,67,41)}
+header nav{display:flex;gap:2px;flex-wrap:wrap}header nav a{color:#fff;opacity:.8;text-decoration:none;padding:15px 13px;font-weight:600;font-size:13.5px;border-bottom:3px solid transparent}
+header nav a.on{opacity:1;border-color:rgb(254,67,41)}.who{margin-left:auto;font-size:13px;opacity:.9}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:rgb(1,25,115);color:#fff;padding:10px 18px;border-radius:10px;font-weight:600;font-size:13.5px;display:none;z-index:20000;box-shadow:0 8px 24px rgba(1,25,115,.3)}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Inventaire SI — refonte v1.28 (voir MODIFICATIONS.md). Grille de
+   cartes plutôt que des tableaux denses pour le stock/attribué/
+   réservé/perdu — l'historique reste un tableau (données
+   chronologiques, une table y est plus lisible qu'une grille).
+   Couleurs de statut cohérentes dans toute la page — voir
+   InventoryItem::$stateColors côté PHP, réutilisées ici en CSS.
+═══════════════════════════════════════════════════════════════════ */
+.inv-wrap { max-width: 100%; margin: 0 auto; padding: 30px 24px 70px; }
+
+:root {
+  --iv-blue: rgb(1,25,115);
+  --iv-orange: rgb(254,67,41);
+  --iv-green: #0a8a54;
+  --iv-green-bg: rgba(10,138,84,.1);
+  --iv-blue-bg: rgba(1,25,115,.08);
+  --iv-amber: #a06400;
+  --iv-amber-bg: rgba(200,130,0,.12);
+  --iv-red: #a32d2d;
+  --iv-red-bg: rgba(220,45,20,.1);
+  --iv-grey: rgba(1,25,115,.45);
+  --iv-grey-bg: rgba(1,25,115,.06);
+}
+
+/* Onglets */
+.inv-tabs { display: flex; gap: 4px; border-bottom: 2px solid rgba(1,25,115,.1); margin-bottom: 28px; flex-wrap: wrap; }
+.inv-tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 22px 14px; font-size: 15px; font-weight: 600;
+  color: var(--iv-grey); text-decoration: none !important;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: color .14s, border-color .14s; white-space: nowrap;
+}
+.inv-tab:hover { color: var(--iv-blue); }
+.inv-tab.iv-active { color: var(--iv-blue); border-bottom-color: var(--iv-orange); }
+.inv-tab-badge {
+  background: var(--iv-grey-bg); color: var(--iv-grey);
+  border-radius: 100px; font-size: 12px; font-weight: 700; padding: 1px 8px; line-height: 18px;
+}
+.inv-tab.iv-active .inv-tab-badge { background: var(--iv-orange); color: #fff; }
+
+/* Barre outils */
+.inv-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+
+/* Boutons */
+.inv-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: 9px; font-size: 14.5px; font-weight: 600;
+  border: none; cursor: pointer; text-decoration: none !important;
+  transition: background .14s, color .14s; white-space: nowrap;
+}
+.inv-btn-primary { background: var(--iv-blue); color: #fff !important; }
+.inv-btn-primary:hover { background: var(--iv-orange); color: #fff !important; }
+.inv-btn-orange { background: var(--iv-orange); color: #fff !important; }
+.inv-btn-orange:hover { background: #dc2d14; color: #fff !important; }
+.inv-btn-ghost { background: none; color: rgba(1,25,115,.65) !important; border: 1px solid rgba(1,25,115,.2); }
+.inv-btn-ghost:hover { background: rgba(1,25,115,.05); color: var(--iv-blue) !important; }
+.inv-btn-danger { background: var(--iv-red-bg); color: var(--iv-red) !important; border: 1px solid rgba(163,45,45,.2); }
+.inv-btn-danger:hover { background: #f5d0d0; }
+.inv-btn-sm { padding: 6px 14px; font-size: 13.5px; }
+.inv-btn-xs { padding: 4px 11px; font-size: 13px; }
+
+/* Champs */
+.inv-input {
+  padding: 9px 14px; border: 1px solid rgba(1,25,115,.15); border-radius: 9px;
+  font-size: 14.5px; color: var(--iv-blue); background: #fff;
+}
+.inv-input:focus { outline: none; border-color: var(--iv-orange); }
+
+/* Filtres type (pills) */
+.inv-type-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.inv-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 15px; border-radius: 100px; font-size: 14px; font-weight: 600;
+  text-decoration: none !important; background: #fff; color: var(--iv-blue);
+  border: 1px solid rgba(1,25,115,.25); transition: background .14s, border-color .14s;
+}
+.inv-pill:hover { background: rgba(1,25,115,.06); border-color: var(--iv-blue); color: var(--iv-blue) !important; }
+.inv-pill.iv-active { background: var(--iv-blue); color: #fff !important; border-color: var(--iv-blue); }
+.inv-pill-cnt { border-radius: 100px; font-size: 12px; padding: 0 6px; line-height: 18px; background: rgba(1,25,115,.12); color: var(--iv-blue); }
+.inv-pill.iv-active .inv-pill-cnt { background: var(--iv-orange); color: #fff; }
+
+/* Badges de statut — couleurs cohérentes dans toute la page */
+.inv-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 100px; font-size: 12.5px; font-weight: 600; }
+.inv-badge-type    { background: var(--iv-blue-bg); color: rgba(1,25,115,.7); }
+.inv-badge-count   { background: var(--iv-grey-bg); color: var(--iv-grey); }
+.inv-badge-green   { background: var(--iv-green-bg); color: var(--iv-green); }
+.inv-badge-blue    { background: var(--iv-blue-bg); color: rgba(1,25,115,.65); }
+.inv-badge-amber   { background: var(--iv-amber-bg); color: var(--iv-amber); }
+.inv-badge-red     { background: var(--iv-red-bg); color: var(--iv-red); }
+.inv-badge-grey    { background: var(--iv-grey-bg); color: var(--iv-grey); }
+
+/* Grille de cartes */
+.inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.inv-card {
+  background: #fff; border: 1px solid rgba(1,25,115,.1); border-radius: 14px;
+  padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;
+  transition: box-shadow .15s, border-color .15s;
+}
+.inv-card:hover { box-shadow: 0 6px 20px rgba(1,25,115,.09); border-color: rgba(1,25,115,.18); }
+.inv-card.iv-clickable { cursor: pointer; }
+.inv-card.iv-focus { box-shadow: 0 0 0 3px var(--udaf-orange, #fe4329); }
+/* Poste avec 2+ ordinateurs — cas exceptionnel à ne pas laisser passer
+   inaperçu (voir tri PHP qui les remonte en haut de la liste "Attribué"). */
+.inv-card-alert { border-color: rgba(220,45,20,.35); background: var(--iv-red-bg); }
+.inv-card-alert:hover { border-color: var(--iv-red); box-shadow: 0 6px 20px rgba(220,45,20,.14); }
+.inv-card-alert .inv-card-title { color: var(--iv-red); }
+.inv-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.inv-card-icon {
+  width: 40px; height: 40px; border-radius: 10px; background: var(--iv-blue-bg); color: var(--iv-blue);
+  display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
+}
+.inv-card-title { font-size: 15.5px; font-weight: 700; color: var(--iv-blue); line-height: 1.3; }
+.inv-card-sub { font-size: 13px; color: rgba(1,25,115,.5); margin-top: 1px; }
+.inv-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.inv-card-notes { font-size: 13px; color: rgba(1,25,115,.45); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.inv-card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 4px; }
+.inv-card-actions form { display: inline; }
+
+/* Boutons icônes inline */
+.inv-icon-btn {
+  background: none; border: none; cursor: pointer; color: rgba(1,25,115,.4);
+  padding: 5px 7px; border-radius: 6px; font-size: 15.5px; text-decoration: none !important;
+  display: inline-flex; align-items: center; transition: color .14s, background .14s; vertical-align: middle;
+}
+.inv-icon-btn:hover { color: var(--iv-blue); background: rgba(1,25,115,.07); }
+.inv-icon-btn-del:hover { color: var(--iv-red); background: var(--iv-red-bg); }
+
+/* État vide */
+.inv-empty { text-align: center; padding: 60px 30px; color: rgba(1,25,115,.38); font-size: 15.5px; grid-column: 1 / -1; }
+.inv-empty i { font-size: 2.5rem; display: block; margin-bottom: 14px; opacity: .28; }
+.inv-empty a { color: var(--iv-orange); font-weight: 600; text-decoration: none; margin-top: 8px; display: inline-block; }
+
+/* Tableau (historique uniquement) */
+.inv-table-wrap { background: #fff; border: 1px solid rgba(1,25,115,.12); border-radius: 14px; overflow: hidden; }
+.inv-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.inv-table th {
+  text-align: left; color: rgba(1,25,115,.5); font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px; padding: 13px 18px;
+  border-bottom: 1px solid rgba(1,25,115,.08); background: rgba(1,25,115,.02);
+}
+.inv-table td { padding: 13px 18px; border-bottom: 1px solid rgba(1,25,115,.06); color: var(--iv-blue); vertical-align: middle; }
+.inv-table tr:last-child td { border-bottom: none; }
+.inv-table tbody tr:hover td { background: rgba(1,25,115,.018); }
+.inv-table td.iv-muted { color: rgba(1,25,115,.4); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Recherche postes / historique */
+.inv-search-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.inv-search-row .inv-input { flex: 1; min-width: 160px; }
+
+/* Recherche globale */
+.iv-global-search {
+  margin-bottom: 22px; padding: 14px 18px; background: #fff;
+  border: 1px solid rgba(1,25,115,.18); border-radius: 12px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.iv-global-search .inv-input { flex: 1; min-width: 240px; max-width: 420px; }
+.iv-global-search-hint { font-size: 13px; color: rgba(1,25,115,.4); }
+
+/* Barre statistiques */
+.iv-stat-bar {
+  display: flex; align-items: center; gap: 16px; padding: 11px 20px;
+  background: rgba(1,25,115,.025); border: 1px solid rgba(1,25,115,.1); border-radius: 10px;
+  margin-bottom: 16px; font-size: 14px; color: rgba(1,25,115,.6);
+}
+.iv-stat-bar strong { color: var(--iv-blue); font-size: 15.5px; }
+.iv-stat-sep { color: rgba(1,25,115,.2); font-size: 18px; line-height: 1; }
+
+/* ── Modales ── */
+.inv-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.42); align-items: center; justify-content: center; z-index: 9999; }
+.inv-modal-overlay.iv-open { display: flex; }
+.inv-modal { background: #fff; border-radius: 16px; width: 620px; max-width: 96vw; max-height: 92vh; box-shadow: 0 20px 70px rgba(1,25,115,.22); display: flex; flex-direction: column; overflow: hidden; }
+.inv-modal-wide { width: 780px; }
+.inv-modal-header { padding: 22px 28px 18px; border-bottom: 1px solid rgba(1,25,115,.08); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
+.inv-modal-header h3 { margin: 0 0 4px; font-size: 1.2rem; font-weight: 700; color: var(--iv-blue); display: flex; align-items: center; gap: 10px; }
+.inv-modal-header h3::before { content: ''; display: inline-block; width: 5px; height: 18px; background: var(--iv-orange); border-radius: 3px; flex-shrink: 0; }
+.inv-modal-header p { margin: 0; font-size: 14.5px; color: rgba(1,25,115,.48); padding-left: 15px; }
+.inv-modal-close { background: none; border: none; font-size: 20px; color: rgba(1,25,115,.28); cursor: pointer; padding: 2px 7px; border-radius: 5px; line-height: 1; flex-shrink: 0; }
+.inv-modal-close:hover { color: var(--iv-blue); background: rgba(1,25,115,.06); }
+.inv-modal-body { flex: 1; overflow-y: auto; padding: 22px 28px; }
+.inv-modal-footer { padding: 16px 28px; border-top: 1px solid rgba(1,25,115,.08); display: flex; justify-content: flex-end; gap: 10px; align-items: center; flex-shrink: 0; background: #fff; }
+.inv-modal-footer-left { flex: 1; display: flex; gap: 8px; }
+
+/* Champs de formulaire (modales) */
+.iv-row { margin-bottom: 16px; }
+.iv-row label { display: block; font-size: 12.5px; font-weight: 700; color: rgba(1,25,115,.52); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.iv-row input, .iv-row select { width: 100%; padding: 9px 14px; border: 1px solid rgba(1,25,115,.18); border-radius: 8px; font-size: 14.5px; color: var(--iv-blue); background: #fafbff; box-sizing: border-box; transition: border-color .14s; }
+.iv-row input:focus, .iv-row select:focus { outline: none; border-color: var(--iv-orange); }
+.iv-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.iv-hidden { display: none !important; }
+
+.iv-item-preview { background: rgba(1,25,115,.035); border: 1px solid rgba(1,25,115,.1); border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 14.5px; color: rgba(1,25,115,.65); }
+.iv-item-preview strong { color: var(--iv-blue); }
+
+/* Détail poste (modale) */
+.iv-detail-section { margin-bottom: 22px; }
+.iv-detail-type { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: rgba(1,25,115,.38); padding-bottom: 7px; border-bottom: 1px solid rgba(1,25,115,.08); margin-bottom: 4px; }
+.iv-detail-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(1,25,115,.045); gap: 14px; }
+.iv-detail-row:last-child { border-bottom: none; }
+.iv-detail-info { font-size: 14.5px; color: var(--iv-blue); font-weight: 500; flex: 1; min-width: 0; }
+.iv-detail-phone { color: var(--iv-green); font-weight: 700; margin-left: 7px; }
+.iv-detail-note { font-size: 13px; color: rgba(1,25,115,.38); margin-left: 7px; }
+
+/* Historique par ordinateur (sous chaque ligne, dans le détail poste) */
+.iv-history-label {
+  display: flex; align-items: center; gap: 5px; margin: 2px 0 0;
+  font-size: 12.5px; color: rgba(1,25,115,.55); font-weight: 600;
+}
+.iv-history-toggle {
+  background: none; border: none; cursor: pointer; padding: 2px 0; margin: 2px 0 0;
+  font-size: 12.5px; color: rgba(1,25,115,.4); display: flex; align-items: center; gap: 5px;
+}
+.iv-history-toggle:hover { color: var(--iv-blue); }
+.iv-history-toggle i { font-size: 10px; transition: transform .14s; }
+.iv-history-toggle.iv-open i { transform: rotate(90deg); }
+.iv-history-list { display: block; list-style: none; margin: 8px 0 0; padding: 10px 14px; background: rgba(1,25,115,.025); border-radius: 8px; }
+.iv-history-list li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 13px; color: rgba(1,25,115,.65); border-bottom: 1px solid rgba(1,25,115,.05); }
+.iv-history-list li:last-child { border-bottom: none; }
+.iv-history-list .iv-h-action { font-weight: 600; color: var(--iv-blue); }
+.iv-history-list .iv-h-person { color: rgba(1,25,115,.45); }
+.iv-history-list .iv-h-staff { color: rgba(1,25,115,.35); font-style: italic; }
+.iv-history-list .iv-h-date { flex-shrink: 0; color: rgba(1,25,115,.4); white-space: nowrap; }
+.iv-history-empty { font-size: 12.5px; color: rgba(1,25,115,.35); font-style: italic; }
+
+.inv-wrap{padding-top:22px}
+@media(max-width:700px){header{padding:0 14px}.who{display:none}.inv-wrap{padding:18px 12px 50px}.iv-2col{grid-template-columns:1fr}.inv-table-wrap{overflow-x:auto}.iv-detail-row{flex-wrap:wrap}}
+</style></head><body>
+<div class="demo">DÉMONSTRATION — inventaire du panneau agent osTicket · équipements et personnes fictifs, rien n'est enregistré</div>
+<header><div class="logo">UDAF <b>47</b> · Agents</div>
+<nav><a href="#" onclick="return false">Tickets</a><a href="#" onclick="return false">Utilisateurs</a><a href="#" class="on" onclick="return false">Inventaire</a><a href="#" onclick="return false">Serveurs</a><a href="#" onclick="return false">Autres outils</a></nav>
+<div class="who"><i class="icon-user"></i> Paolo S. · Agent</div></header>
+
+<div class="inv-wrap" id="iv-root"></div>
+
+<!-- MODALE : Ajouter / Modifier un équipement -->
+<div class="inv-modal-overlay" id="iv-add-modal">
+  <div class="inv-modal">
+    <div class="inv-modal-header"><div><h3 id="iv-add-title">Ajouter au stock</h3></div><button class="inv-modal-close" onclick="ivClose('iv-add-modal')">✕</button></div>
+    <form id="iv-add-form" style="display:contents">
+      <input type="hidden" name="item_id">
+      <div class="inv-modal-body">
+        <div class="iv-row"><label>Type d'équipement *</label><select name="type" id="iv-type-sel" required onchange="ivToggleTypeFields(this.value)"></select></div>
+        <div class="iv-2col">
+          <div class="iv-row"><label>Nom</label><input type="text" name="reference" placeholder="Nom de l'appareil…"></div>
+          <div class="iv-row"><label>Modèle</label><input type="text" name="model" placeholder="Dell P2422H, Latitude 5540…"></div>
+        </div>
+        <div class="iv-row" id="iv-qty-row"><label>Quantité en stock</label><input type="number" name="quantity" min="1" step="1" value="1"></div>
+        <div class="iv-row iv-hidden" id="iv-phone-row"><label>Numéro de téléphone</label><input type="text" name="phone_number" placeholder="05 53 …"></div>
+        <div class="iv-row iv-hidden" id="iv-win11-row" style="display:flex;gap:20px;">
+          <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14.5px;"><input type="checkbox" name="win11" value="1" style="width:auto;"> Sous Windows 11</label>
+          <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14.5px;"><input type="checkbox" name="battery_changed" value="1" style="width:auto;"> Batterie changée</label>
+        </div>
+        <div class="iv-row"><label>Notes</label><input type="text" name="notes" placeholder="Remarques…"></div>
+      </div>
+      <div class="inv-modal-footer">
+        <div class="inv-modal-footer-left" id="iv-add-extra"></div>
+        <button type="button" class="inv-btn inv-btn-ghost" onclick="ivClose('iv-add-modal')">Annuler</button>
+        <button type="submit" class="inv-btn inv-btn-primary"><i class="icon-ok"></i> Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODALE : Attribuer / Réserver / Réaffecter (même structure) -->
+<div class="inv-modal-overlay" id="iv-person-modal">
+  <div class="inv-modal">
+    <div class="inv-modal-header"><div><h3 id="iv-person-title"></h3><p id="iv-person-label"></p></div><button class="inv-modal-close" onclick="ivClose('iv-person-modal')">✕</button></div>
+    <form id="iv-person-form" style="display:contents">
+      <div class="inv-modal-body">
+        <p id="iv-person-help" style="font-size:13.5px;color:rgba(1,25,115,.55);margin:0 0 16px;display:none;">Tous les équipements de ce poste seront transférés à la nouvelle personne. L'historique de chaque ordinateur garde une trace du changement (ancien et nouveau titulaire, avec la date).</p>
+        <div class="iv-row">
+          <label id="iv-person-lbl">Personne *</label>
+          <select id="iv-person-sel" onchange="ivSyncPerson()"></select>
+          <input type="text" id="iv-person-new" class="iv-hidden" autocomplete="off" placeholder="Prénom Nom" style="margin-top:10px;">
+        </div>
+      </div>
+      <div class="inv-modal-footer">
+        <div class="inv-modal-footer-left"></div>
+        <button type="button" class="inv-btn inv-btn-ghost" onclick="ivClose('iv-person-modal')">Annuler</button>
+        <button type="submit" class="inv-btn" id="iv-person-submit"></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODALE : Modifier un poste -->
+<div class="inv-modal-overlay" id="iv-edit-post-modal">
+  <div class="inv-modal">
+    <div class="inv-modal-header"><h3>Modifier le poste</h3><button class="inv-modal-close" onclick="ivClose('iv-edit-post-modal')">✕</button></div>
+    <form id="iv-edit-post-form" style="display:contents">
+      <input type="hidden" id="iv-ep-id">
+      <div class="inv-modal-body">
+        <div class="iv-row"><label>Nom du poste *</label><input type="text" id="iv-ep-name" required placeholder="Bureau 01…"></div>
+        <div class="iv-row"><label>Personne</label><input type="text" id="iv-ep-person" placeholder="Prénom Nom"></div>
+      </div>
+      <div class="inv-modal-footer">
+        <div class="inv-modal-footer-left"></div>
+        <button type="button" class="inv-btn inv-btn-ghost" onclick="ivClose('iv-edit-post-modal')">Annuler</button>
+        <button type="submit" class="inv-btn inv-btn-primary"><i class="icon-ok"></i> Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODALE : Note -->
+<div class="inv-modal-overlay" id="iv-note-modal" style="z-index:10000;">
+  <div class="inv-modal" style="width:440px;">
+    <div class="inv-modal-header"><h3>Note</h3><button class="inv-modal-close" onclick="ivClose('iv-note-modal')">✕</button></div>
+    <form id="iv-note-form">
+      <input type="hidden" id="iv-note-item-id">
+      <div class="inv-modal-body"><textarea id="iv-note-textarea" rows="5" class="inv-input" style="width:100%;resize:vertical;" placeholder="Note sur ce PC…"></textarea></div>
+      <div class="inv-modal-footer">
+        <div class="inv-modal-footer-left"></div>
+        <button type="button" class="inv-btn inv-btn-ghost" onclick="ivClose('iv-note-modal')">Annuler</button>
+        <button type="submit" class="inv-btn inv-btn-primary"><i class="icon-comment"></i> Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODALE : Détail d'un poste -->
+<div class="inv-modal-overlay" id="iv-post-modal"><div class="inv-modal inv-modal-wide" id="iv-post-box"></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+'use strict';
+/* ── Modèle (mêmes règles que include/class.inventory.php) ───────────── */
+var TYPES = ['Ordinateur', 'Téléphone', 'Écran', 'Câble', 'Souris', 'Casque', 'Clavier'];
+var ICONS = { 'Ordinateur': 'icon-desktop', 'Téléphone': 'icon-phone', 'Écran': 'icon-desktop', 'Câble': 'icon-bolt', 'Souris': 'icon-hand-up', 'Casque': 'icon-headphones', 'Clavier': 'icon-keyboard' };
+var STATES = { stock: 'En stock', assigned: 'Attribué', reserved: 'Réservé', lost: 'Perdu', hs: 'Hors service' };
+var STATE_COLORS = { stock: 'green', assigned: 'blue', reserved: 'amber', lost: 'red', hs: 'red' };
+var ACTIONS = { created: 'Créé', deleted: 'Supprimé', assigned: 'Attribué', unassigned: 'Rendu', reserved: 'Réservé', unreserved: 'Réservation annulée',
+  maintenance: 'Maintenance effectuée', win11_on: 'Passé sous Windows 11', win11_off: 'Repassé sous Windows 10', battery_on: 'Batterie changée',
+  battery_off: 'Batterie non changée', lost: 'Marqué perdu', hs: 'Marqué hors service', relisted: 'Remis en stock', note_added: 'Note ajoutée',
+  note_cleared: 'Note supprimée', reassigned: 'Réaffecté' };
+var STAFF = 'Paolo S.';
+function isBulk(t) { return t !== 'Ordinateur' && t !== 'Téléphone'; }
+
+var DAY = 86400000, T0 = Date.now();
+function daysAgo(n, h) { return new Date(T0 - n * DAY - (h || 0) * 3600000); }
+function ymd(d) { return d.toISOString().slice(0, 10); }
+
+var DB = { items: [], posts: [], assign: {}, reserv: {}, logs: [], seq: 1, pseq: 1 };
+function addItem(o) { var it = Object.assign({ id: DB.seq++, type: 'Ordinateur', ref: '', model: '', phone: '', win11: 0, bat: 0, maint: null, notes: '', qty: 1, state: 'stock' }, o); DB.items.push(it); return it; }
+function item(id) { return DB.items.find(function (x) { return x.id === id; }); }
+function post(id) { return DB.posts.find(function (x) { return x.id === id; }); }
+function log(it, action, person, note, when) {
+  DB.logs.push({ t: when || new Date(), item_id: it.id, type: it.type, ref: it.ref, model: it.model, action: action, person: person || '', staff: STAFF, note: note || '' });
+}
+function postOf(it) { return DB.assign[it.id] ? post(DB.assign[it.id]) : null; }
+function itemsOfPost(pid) { return DB.items.filter(function (it) { return DB.assign[it.id] === pid; }); }
+function cleanupPost(p) { if (p && !itemsOfPost(p.id).length) DB.posts = DB.posts.filter(function (x) { return x !== p; }); }
+function takeOneUnit(it) {
+  if (it.qty <= 1) return it;
+  it.qty--;
+  return addItem({ type: it.type, ref: it.ref, model: it.model, phone: it.phone, win11: it.win11, bat: it.bat, notes: it.notes, qty: 1, state: 'stock' });
+}
+function returnToPool(it) {
+  if (isBulk(it.type)) {
+    var m = DB.items.find(function (x) { return x !== it && x.type === it.type && x.state === 'stock' && x.ref === it.ref && x.model === it.model; });
+    if (m) { m.qty++; DB.items = DB.items.filter(function (x) { return x !== it; }); return; }
+  }
+  it.state = 'stock';
+}
+function assignToPerson(it, person, when) {
+  person = person.trim();
+  it = takeOneUnit(it);
+  var p = DB.posts.find(function (x) { return x.person === person; });
+  if (!p) { p = { id: DB.pseq++, name: (it.type === 'Ordinateur' && it.ref) ? it.ref : person, person: person }; DB.posts.push(p); }
+  delete DB.reserv[it.id];
+  var old = postOf(it); DB.assign[it.id] = p.id; if (old && old !== p) cleanupPost(old);
+  it.state = 'assigned';
+  log(it, 'assigned', person, '', when);
+  return it;
+}
+function reserveItem(it, person, when) {
+  it = takeOneUnit(it);
+  var old = postOf(it); delete DB.assign[it.id]; cleanupPost(old);
+  DB.reserv[it.id] = person.trim(); it.state = 'reserved';
+  log(it, 'reserved', person, '', when);
+  return it;
+}
+function unassign(it) { var p = postOf(it), person = p ? p.person : ''; delete DB.assign[it.id]; returnToPool(it); cleanupPost(p); log(it, 'unassigned', person); }
+function unreserve(it) { var person = DB.reserv[it.id] || ''; delete DB.reserv[it.id]; returnToPool(it); log(it, 'unreserved', person); }
+function markLostOrHs(it, st) { var p = postOf(it), person = p ? p.person : ''; delete DB.assign[it.id]; delete DB.reserv[it.id]; it.state = st; cleanupPost(p); log(it, st, person); }
+
+/* ── Données fictives ───────────────────────────────────────────────── */
+var PCS = [
+  ['PO-UDAF-0101', 'Latitude 5540', 1, 1, 12], ['PO-UDAF-0102', 'Latitude 5540', 1, 0, 40], ['PO-UDAF-0103', 'Latitude 3420', 0, 0, null],
+  ['PO-UDAF-0104', 'Latitude 3420', 1, 1, 95], ['PO-UDAF-0105', 'ThinkPad E14', 1, 0, 8], ['PO-UDAF-0106', 'ThinkPad E14', 0, 1, 210],
+  ['PO-UDAF-0107', 'Latitude 5540', 1, 1, 3], ['PO-UDAF-0108', 'OptiPlex 7010', 1, 0, 60], ['PO-UDAF-0109', 'Latitude 3420', 0, 0, null],
+  ['PO-UDAF-0110', 'Latitude 5540', 1, 0, 30], ['PO-UDAF-0111', 'ThinkPad E14', 1, 1, 15], ['PO-UDAF-0112', 'OptiPlex 7010', 0, 0, 400]
+];
+var P = PCS.map(function (r, i) { return addItem({ ref: r[0], model: r[1], win11: r[2], bat: r[3], maint: r[4] == null ? null : ymd(daysAgo(r[4])) }); });
+P.forEach(function (it, i) { log(it, 'created', '', '', daysAgo(320 - i, 3)); });
+var PEOPLE = ['Julien Marchand', 'Sophie Lemaire', 'Camille Durand', 'Marc Petit', 'Léa Bernard', 'Thomas Girard', 'Nadia Robert'];
+assignToPerson(P[0], 'Julien Marchand', daysAgo(180, 2));
+assignToPerson(P[1], 'Sophie Lemaire', daysAgo(150, 5));
+assignToPerson(P[3], 'Camille Durand', daysAgo(140, 1));
+assignToPerson(P[4], 'Marc Petit', daysAgo(90, 4));
+assignToPerson(P[6], 'Léa Bernard', daysAgo(60, 2));
+assignToPerson(P[10], 'Léa Bernard', daysAgo(5, 3));       // 2 ordinateurs → carte en rouge
+assignToPerson(P[7], 'Thomas Girard', daysAgo(45, 6));
+P[10].notes = 'Prêt temporaire pendant la réparation du 0107';
+log(P[10], 'note_added', '', P[10].notes, daysAgo(5, 2));
+log(P[6], 'win11_on', '', '', daysAgo(30, 1)); log(P[6], 'maintenance', '', '', daysAgo(3, 2));
+log(P[0], 'maintenance', '', '', daysAgo(12, 4)); log(P[3], 'battery_on', '', '', daysAgo(95, 1));
+reserveItem(P[9], 'Nadia Robert', daysAgo(2, 1));
+markLostOrHs(P[11], 'hs'); DB.logs[DB.logs.length - 1].t = daysAgo(20, 2); P[11].notes = 'Carte mère HS, conservé pour pièces';
+markLostOrHs(P[5], 'lost'); DB.logs[DB.logs.length - 1].t = daysAgo(70, 3);
+['06 12 34 56 01', '06 12 34 56 02', '06 12 34 56 03'].forEach(function (n, i) { addItem({ type: 'Téléphone', ref: 'TEL-0' + (i + 1), model: 'Galaxy A35', phone: n }); });
+assignToPerson(item(13), 'Julien Marchand', daysAgo(170, 1));
+assignToPerson(item(14), 'Marc Petit', daysAgo(88, 1));
+var ecr = addItem({ type: 'Écran', ref: 'Écran 24"', model: 'Dell P2422H', qty: 9 });
+addItem({ type: 'Souris', ref: 'Souris sans fil', model: 'Logitech M185', qty: 14 });
+addItem({ type: 'Câble', ref: 'HDMI 2 m', model: '', qty: 20 });
+var cas = addItem({ type: 'Casque', ref: 'Casque USB', model: 'Jabra Evolve 20', qty: 5 });
+addItem({ type: 'Clavier', ref: 'Clavier AZERTY', model: 'Logitech K120', qty: 8 });
+assignToPerson(ecr, 'Julien Marchand', daysAgo(170, 2)); assignToPerson(ecr, 'Sophie Lemaire', daysAgo(150, 3)); assignToPerson(ecr, 'Camille Durand', daysAgo(140, 2));
+assignToPerson(cas, 'Sophie Lemaire', daysAgo(1, 3));
+reserveItem(cas, 'Thomas Girard', daysAgo(1, 1));
+
+/* ── Utilitaires ─────────────────────────────────────────────────────── */
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function fdate(d) { d = new Date(d); return d.toLocaleDateString('fr-FR'); }
+function fdt(d) { d = new Date(d); return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
+function toast(t) { var e = document.getElementById('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(function () { e.style.display = 'none'; }, 2400); }
+function personNames() {
+  var s = {}; DB.posts.forEach(function (p) { if (p.person) s[p.person] = 1; }); Object.keys(DB.reserv).forEach(function (k) { s[DB.reserv[k]] = 1; });
+  PEOPLE.forEach(function (n) { s[n] = 1; });
+  return Object.keys(s).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+}
+
+/* ── Rendu (miroir de include/staff/inventory-main.inc.php) ──────────── */
+var S = { tab: 'stock', g: '', type: '', q: '', aq: '', hq: '', hp: '', ha: '', focus: null };
+var root = document.getElementById('iv-root');
+
+function card(inner, cls, attrs) { return '<div class="inv-card' + (cls || '') + '"' + (attrs || '') + '>' + inner + '</div>'; }
+function iconBox(t) { return '<div class="inv-card-icon"><i class="' + (ICONS[t] || 'icon-inbox') + '"></i></div>'; }
+function titleBlock(it, fb) { return '<div><div class="inv-card-title">' + esc(it.ref || fb || '—') + '</div><div class="inv-card-sub">' + esc(it.model || fb || '—') + '</div></div>'; }
+function noteBtn(it, label) { return it.type === 'Ordinateur' ? '<button type="button" class="inv-icon-btn" title="Note" data-note="' + it.id + '"><i class="icon-comment"></i>' + (label ? ' Note' : '') + '</button>' : ''; }
+
+function render() {
+  var stock = DB.items.filter(function (x) { return x.state === 'stock'; });
+  var stockTotal = stock.reduce(function (a, x) { return a + x.qty; }, 0);
+  var posts = DB.posts.slice(), lost = DB.items.filter(function (x) { return x.state === 'lost' || x.state === 'hs'; });
+  var reserved = DB.items.filter(function (x) { return x.state === 'reserved'; });
+  var h = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:22px;">'
+    + '<form class="iv-global-search" id="iv-g-form" style="margin-bottom:0;flex:1;"><i class="icon-search" style="color:rgba(1,25,115,.35);"></i>'
+    + '<input type="text" id="iv-g" class="inv-input" placeholder="Recherche globale — nom, modèle, téléphone, personne…" value="' + esc(S.g) + '">'
+    + '<button type="submit" class="inv-btn inv-btn-ghost"><i class="icon-search"></i> Rechercher</button>'
+    + (S.g ? '<button type="button" class="inv-btn inv-btn-ghost" data-gclear="1"><i class="icon-remove"></i> Effacer</button>' : '<span class="iv-global-search-hint">Cherche dans tous les états confondus (stock, attribué, réservé, perdu/HS).</span>')
+    + '</form></div>';
+
+  if (S.g) { root.innerHTML = h + renderGlobal(); return; }
+
+  h += '<nav class="inv-tabs">' + [['stock', 'icon-inbox', 'En stock', stockTotal], ['assigned', 'icon-user', 'Attribué', posts.length], ['reserved', 'icon-bookmark', 'Réservation', reserved.length],
+    ['lost', 'icon-warning-sign', 'Perdu / HS', lost.length], ['history', 'icon-list-alt', 'Historique', DB.logs.length]].map(function (t) {
+    return '<a href="#" data-tab="' + t[0] + '" class="inv-tab ' + (S.tab === t[0] ? 'iv-active' : '') + '"><i class="' + t[1] + '"></i> ' + t[2] + ' <span class="inv-tab-badge">' + t[3] + '</span></a>';
+  }).join('') + '<a href="#" class="inv-tab" style="margin-left:auto;" data-export="1"><i class="icon-download-alt"></i> Exporter PC (.xls)</a></nav>';
+
+  if (S.tab === 'stock') h += renderStock(stock, stockTotal);
+  else if (S.tab === 'assigned') h += renderAssigned(posts);
+  else if (S.tab === 'reserved') h += renderReserved(reserved);
+  else if (S.tab === 'lost') h += renderLost(lost);
+  else h += renderHistory();
+  root.innerHTML = h;
+  if (S.tab === 'assigned') filterAssigned(S.aq);
+  if (S.focus) { var c = document.getElementById('iv-item-' + S.focus); if (c) { c.classList.add('iv-focus'); c.scrollIntoView({ block: 'center' }); } S.focus = null; }
+}
+
+function renderStock(stock, total) {
+  var counts = {}; TYPES.forEach(function (t) { counts[t] = 0; });
+  stock.forEach(function (x) { counts[x.type] += x.qty; });
+  var h = '<div class="inv-type-pills"><a href="#" data-type="" class="inv-pill ' + (!S.type ? 'iv-active' : '') + '">Tous <span class="inv-pill-cnt">' + total + '</span></a>'
+    + TYPES.map(function (t) { return '<a href="#" data-type="' + esc(t) + '" class="inv-pill ' + (S.type === t ? 'iv-active' : '') + '">' + esc(t) + ' <span class="inv-pill-cnt">' + counts[t] + '</span></a>'; }).join('') + '</div>';
+  h += '<div class="inv-toolbar"><form id="iv-stock-q" style="display:flex;align-items:center;gap:10px;flex:1;"><input type="text" id="iv-q" class="inv-input" style="flex:1;max-width:320px;" placeholder="Rechercher…" value="' + esc(S.q) + '">'
+    + (S.q ? '<button type="button" class="inv-btn inv-btn-ghost inv-btn-sm" data-qclear="1"><i class="icon-remove"></i></button>' : '') + '</form>'
+    + '<button type="button" class="inv-btn inv-btn-primary" data-add="1"><i class="icon-plus"></i> Ajouter</button></div>';
+  var q = S.q.toLowerCase();
+  var list = stock.filter(function (x) { return (!S.type || x.type === S.type) && (!q || (x.ref + ' ' + x.model + ' ' + x.notes + ' ' + x.phone).toLowerCase().indexOf(q) >= 0); })
+    .sort(function (a, b) { return TYPES.indexOf(a.type) - TYPES.indexOf(b.type) || a.ref.localeCompare(b.ref); });
+  h += '<div class="inv-grid">';
+  if (!list.length) h += '<div class="inv-empty"><i class="icon-inbox"></i>' + (S.type ? 'Aucun équipement de ce type en stock.' : 'Stock vide.') + '<br><a href="#" data-add="1">Ajouter le premier équipement</a></div>';
+  list.forEach(function (it) {
+    var pc = it.type === 'Ordinateur';
+    h += card('<div class="inv-card-top">' + iconBox(it.type) + '<div class="inv-card-badges"><span class="inv-badge inv-badge-type">' + esc(it.type) + '</span>'
+      + (it.qty > 1 ? '<span class="inv-badge inv-badge-count">×' + it.qty + '</span>' : '') + '</div></div>' + titleBlock(it)
+      + (pc ? '<div class="inv-card-badges">' + (it.win11 ? '<span class="inv-badge inv-badge-blue">Win 11</span>' : '') + (it.bat ? '<span class="inv-badge inv-badge-green">Batterie OK</span>' : '') + '</div>'
+        + '<div class="inv-card-sub"><i class="icon-wrench"></i> ' + (it.maint ? 'Maintenance : ' + fdate(it.maint) : 'Jamais maintenu')
+        + ' <button type="button" class="inv-icon-btn" title="Marquer la maintenance effectuée aujourd\'hui" data-maint="' + it.id + '"><i class="icon-wrench"></i></button></div>' : '')
+      + (it.notes ? '<div class="inv-card-notes">' + esc(it.notes) + '</div>' : '')
+      + '<div class="inv-card-actions"><button type="button" class="inv-btn inv-btn-primary inv-btn-sm" data-assign="' + it.id + '"><i class="icon-user"></i> Attribuer</button>'
+      + '<button type="button" class="inv-btn inv-btn-ghost inv-btn-sm" data-reserve="' + it.id + '"><i class="icon-bookmark"></i> Réserver</button>'
+      + noteBtn(it) + '<button type="button" class="inv-icon-btn" title="Modifier" data-edit="' + it.id + '"><i class="icon-edit"></i></button>'
+      + '<button type="button" class="inv-icon-btn inv-icon-btn-del" title="Supprimer" data-del="' + it.id + '"><i class="icon-trash"></i></button></div>');
+  });
+  return h + '</div>';
+}
+
+function postStats(p) {
+  var its = itemsOfPost(p.id), pcs = its.filter(function (x) { return x.type === 'Ordinateur'; });
+  return { items: its, pcs: pcs, win11: pcs.filter(function (x) { return x.win11; }).length, bat: pcs.filter(function (x) { return x.bat; }).length,
+    unmaint: pcs.some(function (x) { return !x.maint; }) };
+}
+function renderAssigned(posts) {
+  var nItems = 0;
+  // Postes avec 2+ ordinateurs remontés en haut (comme côté PHP).
+  posts.sort(function (a, b) { return (postStats(b).pcs.length >= 2) - (postStats(a).pcs.length >= 2) || a.name.localeCompare(b.name); });
+  var h = '<div class="inv-search-row"><i class="icon-search" style="color:rgba(1,25,115,.35);flex-shrink:0;"></i>'
+    + '<input type="text" id="iv-assigned-search" class="inv-input" placeholder="Rechercher un poste ou une personne…" autocomplete="off" value="' + esc(S.aq) + '">'
+    + '<button type="button" class="inv-btn inv-btn-ghost" data-aqclear="1"><i class="icon-remove"></i> Effacer</button></div>';
+  var g = '';
+  posts.forEach(function (p) {
+    var st = postStats(p), multi = st.pcs.length >= 2; nItems += st.items.length;
+    g += card('<div class="inv-card-top"><div class="inv-card-icon"><i class="icon-user"></i></div><span class="inv-badge inv-badge-count">' + st.items.length + ' équipement' + (st.items.length !== 1 ? 's' : '') + '</span></div>'
+      + '<div><div class="inv-card-title">' + esc(p.name) + '</div><div class="inv-card-sub">' + esc(p.person || '—') + '</div></div>'
+      + (st.pcs.length ? '<div class="inv-card-badges">' + (multi ? '<span class="inv-badge inv-badge-red"><i class="icon-warning-sign" style="font-size:11px;"></i> ' + st.pcs.length + ' ordinateurs</span>' : '')
+        + (st.win11 ? '<span class="inv-badge inv-badge-blue">Win 11' + (st.win11 > 1 ? ' ×' + st.win11 : '') + '</span>' : '')
+        + (st.bat ? '<span class="inv-badge inv-badge-green">Batterie OK' + (st.bat > 1 ? ' ×' + st.bat : '') + '</span>' : '')
+        + (st.unmaint ? '<span class="inv-badge inv-badge-amber"><i class="icon-wrench" style="font-size:11px;"></i> À maintenir</span>' : '') + '</div>' : '')
+      + '<div class="inv-card-actions" data-stop="1"><button type="button" class="inv-icon-btn" title="Voir le détail" data-post="' + p.id + '"><i class="icon-eye-open"></i></button>'
+      + (st.pcs.length === 1 ? '<button type="button" class="inv-icon-btn" title="Maintenance — ' + (st.pcs[0].maint ? 'dernière : ' + fdate(st.pcs[0].maint) : 'jamais effectuée') + '" data-maint="' + st.pcs[0].id + '"><i class="icon-wrench"></i></button>'
+        : st.pcs.length > 1 ? '<button type="button" class="inv-icon-btn" title="Maintenance — voir le détail du poste" data-post="' + p.id + '"><i class="icon-wrench"></i></button>' : '')
+      + '<button type="button" class="inv-icon-btn" title="Modifier" data-editpost="' + p.id + '"><i class="icon-edit"></i></button>'
+      + '<button type="button" class="inv-icon-btn inv-icon-btn-del" title="Supprimer le poste" data-delpost="' + p.id + '"><i class="icon-trash"></i></button></div>',
+      ' iv-clickable' + (multi ? ' inv-card-alert' : ''), ' data-search="' + esc((p.name + ' ' + p.person).toLowerCase()) + '" data-post="' + p.id + '"');
+  });
+  h += '<div class="iv-stat-bar"><strong>' + posts.length + '</strong> poste' + (posts.length !== 1 ? 's' : '') + '<span class="iv-stat-sep">·</span><strong>' + nItems + '</strong> appareil' + (nItems !== 1 ? 's' : '') + ' attribué' + (nItems !== 1 ? 's' : '') + '</div>';
+  return h + '<div class="inv-grid" id="iv-assigned-grid">' + (posts.length ? '<div class="inv-empty" id="iv-assigned-no-results" style="display:none;"><i class="icon-search"></i>Aucun résultat pour cette recherche.</div>' + g
+    : '<div class="inv-empty"><i class="icon-user"></i>Aucun poste attribué.</div>') + '</div>';
+}
+function filterAssigned(q) {
+  q = (q || '').toLowerCase().trim(); var vis = 0;
+  document.querySelectorAll('#iv-assigned-grid [data-search]').forEach(function (c) { var m = !q || c.dataset.search.indexOf(q) !== -1; c.style.display = m ? '' : 'none'; if (m) vis++; });
+  var nr = document.getElementById('iv-assigned-no-results'); if (nr) nr.style.display = (q && !vis) ? '' : 'none';
+}
+function renderReserved(list) {
+  var h = '<div class="inv-grid">';
+  if (!list.length) h += '<div class="inv-empty"><i class="icon-bookmark"></i>Aucune réservation en cours.</div>';
+  list.forEach(function (it) {
+    h += card('<div class="inv-card-top">' + iconBox(it.type) + '<span class="inv-badge inv-badge-type">' + esc(it.type) + '</span></div>' + titleBlock(it)
+      + '<div class="inv-card-sub"><i class="icon-bookmark"></i> Réservé pour <strong>' + esc(DB.reserv[it.id] || '—') + '</strong></div>'
+      + (it.notes ? '<div class="inv-card-notes">' + esc(it.notes) + '</div>' : '')
+      + '<div class="inv-card-actions">' + (DB.reserv[it.id] ? '<button type="button" class="inv-btn inv-btn-primary inv-btn-sm" data-fromres="' + it.id + '"><i class="icon-user"></i> Attribuer</button>' : '')
+      + noteBtn(it) + '<button type="button" class="inv-btn inv-btn-ghost inv-btn-sm" data-unres="' + it.id + '"><i class="icon-inbox"></i> Remettre en stock</button></div>', '', ' id="iv-item-' + it.id + '"');
+  });
+  return h + '</div>';
+}
+function renderLost(list) {
+  var h = '<div class="inv-grid">';
+  if (!list.length) h += '<div class="inv-empty"><i class="icon-warning-sign"></i>Aucun équipement perdu ou hors service.</div>';
+  list.forEach(function (it) {
+    h += card('<div class="inv-card-top">' + iconBox(it.type) + '<span class="inv-badge inv-badge-' + STATE_COLORS[it.state] + '">' + esc(STATES[it.state]) + '</span></div>' + titleBlock(it)
+      + (it.notes ? '<div class="inv-card-notes">' + esc(it.notes) + '</div>' : '')
+      + '<div class="inv-card-actions">' + noteBtn(it) + '<button type="button" class="inv-btn inv-btn-ghost inv-btn-sm" data-relist="' + it.id + '"><i class="icon-inbox"></i> Remettre en stock</button>'
+      + '<button type="button" class="inv-icon-btn inv-icon-btn-del" title="Supprimer" data-del="' + it.id + '"><i class="icon-trash"></i></button></div>', '', ' id="iv-item-' + it.id + '"');
+  });
+  return h + '</div>';
+}
+function renderHistory() {
+  var h = '<form class="inv-search-row" id="iv-h-form"><input type="text" id="iv-hq" class="inv-input" placeholder="Nom / modèle…" value="' + esc(S.hq) + '" style="flex:1;min-width:140px;">'
+    + '<input type="text" id="iv-hp" class="inv-input" placeholder="Personne…" value="' + esc(S.hp) + '" style="flex:1;min-width:140px;">'
+    + '<select id="iv-ha" class="inv-input" style="min-width:190px;"><option value="">Toutes les actions</option>'
+    + Object.keys(ACTIONS).map(function (k) { return '<option value="' + k + '"' + (S.ha === k ? ' selected' : '') + '>' + esc(ACTIONS[k]) + '</option>'; }).join('') + '</select>'
+    + '<button type="submit" class="inv-btn inv-btn-ghost"><i class="icon-search"></i> Filtrer</button>'
+    + ((S.hq || S.hp || S.ha) ? '<button type="button" class="inv-btn inv-btn-ghost" data-hclear="1"><i class="icon-remove"></i> Effacer</button>' : '') + '</form>';
+  var hq = S.hq.toLowerCase(), hp = S.hp.toLowerCase();
+  var rows = DB.logs.filter(function (l) { return (!hq || (l.ref + ' ' + l.model).toLowerCase().indexOf(hq) >= 0) && (!hp || l.person.toLowerCase().indexOf(hp) >= 0) && (!S.ha || l.action === S.ha); })
+    .sort(function (a, b) { return b.t - a.t; });
+  h += '<div class="inv-table-wrap"><table class="inv-table"><thead><tr><th>Date / heure</th><th>Appareil</th><th>Action</th><th>Personne</th><th>Agent</th><th>Note</th></tr></thead><tbody>';
+  if (!rows.length) h += '<tr><td colspan="6" class="inv-empty"><i class="icon-list-alt"></i>' + ((S.hq || S.hp || S.ha) ? 'Aucun événement pour ces critères.' : 'Aucun historique enregistré.') + '</td></tr>';
+  rows.forEach(function (l) {
+    h += '<tr><td style="white-space:nowrap;color:rgba(1,25,115,.45);font-size:13.5px;">' + fdt(l.t) + '</td><td><span class="inv-badge inv-badge-type" style="margin-right:6px;font-size:12px;">' + esc(l.type) + '</span><strong>' + esc(l.ref || '—') + '</strong>'
+      + (l.model ? '<span style="color:rgba(1,25,115,.4);margin-left:6px;font-size:13.5px;">' + esc(l.model) + '</span>' : '') + '</td>'
+      + '<td style="white-space:nowrap;"><span class="inv-badge inv-badge-grey">' + esc(ACTIONS[l.action] || l.action) + '</span></td><td>' + (l.person ? '<strong>' + esc(l.person) + '</strong>' : '—') + '</td>'
+      + '<td class="iv-muted" style="max-width:180px;">' + esc(l.staff || '—') + '</td><td class="iv-muted" style="max-width:220px;">' + esc(l.note || '—') + '</td></tr>';
+  });
+  return h + '</tbody></table></div>';
+}
+function renderGlobal() {
+  var g = S.g.toLowerCase();
+  var res = DB.items.filter(function (it) {
+    var p = postOf(it);
+    return (it.ref + ' ' + it.model + ' ' + it.phone + ' ' + it.notes + ' ' + (p ? p.person + ' ' + p.name : '') + ' ' + (DB.reserv[it.id] || '')).toLowerCase().indexOf(g) >= 0;
+  });
+  var h = '<div class="inv-grid">';
+  if (!res.length) h += '<div class="inv-empty"><i class="icon-search"></i>Aucun résultat pour « ' + esc(S.g) + ' ».</div>';
+  res.forEach(function (it) {
+    var p = postOf(it);
+    h += card('<div class="inv-card-top">' + iconBox(it.type) + '<span class="inv-badge inv-badge-' + STATE_COLORS[it.state] + '">' + esc(STATES[it.state]) + '</span></div>' + titleBlock(it, it.type)
+      + (p ? '<div class="inv-card-sub"><i class="icon-user"></i> Attribué à <strong>' + esc(p.person) + '</strong></div>' : DB.reserv[it.id] ? '<div class="inv-card-sub"><i class="icon-bookmark"></i> Réservé pour <strong>' + esc(DB.reserv[it.id]) + '</strong></div>' : '')
+      + (it.notes ? '<div class="inv-card-notes">' + esc(it.notes) + '</div>' : '')
+      + (it.type === 'Ordinateur' ? '<div class="inv-card-actions" data-stop="1">' + noteBtn(it, true) + '</div>' : ''),
+      ' iv-clickable', ' data-open="' + it.id + '" title="Cliquer pour ouvrir / modifier"');
+  });
+  return h + '</div>';
+}
+
+/* ── Modales ─────────────────────────────────────────────────────────── */
+function ivClose(id) { document.getElementById(id).classList.remove('iv-open'); }
+window.ivClose = ivClose;
+function ivOpen(id) { document.getElementById(id).classList.add('iv-open'); }
+document.querySelectorAll('.inv-modal-overlay').forEach(function (o) { o.addEventListener('click', function (e) { if (e.target === o) o.classList.remove('iv-open'); }); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.querySelectorAll('.inv-modal-overlay.iv-open').forEach(function (o) { o.classList.remove('iv-open'); }); });
+
+window.ivToggleTypeFields = function (type) {
+  document.getElementById('iv-phone-row').classList.toggle('iv-hidden', type !== 'Téléphone');
+  document.getElementById('iv-win11-row').classList.toggle('iv-hidden', type !== 'Ordinateur');
+  document.getElementById('iv-qty-row').classList.toggle('iv-hidden', type === 'Ordinateur' || type === 'Téléphone');
+};
+document.getElementById('iv-type-sel').innerHTML = TYPES.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('');
+function openAdd(it) {
+  var f = document.getElementById('iv-add-form');
+  f.reset(); f.item_id.value = it ? it.id : '';
+  document.getElementById('iv-add-title').textContent = it ? "Modifier l'équipement" : 'Ajouter au stock';
+  if (it) { f.type.value = it.type; f.reference.value = it.ref; f.model.value = it.model; f.quantity.value = it.qty; f.phone_number.value = it.phone; f.win11.checked = !!it.win11; f.battery_changed.checked = !!it.bat; f.notes.value = it.notes; }
+  ivToggleTypeFields(f.type.value);
+  document.getElementById('iv-add-extra').innerHTML = it && it.type === 'Ordinateur'
+    ? '<button type="button" class="inv-btn inv-btn-ghost inv-btn-sm" style="color:#1d56b0;border-color:rgba(29,86,176,.25);" data-mark="lost"><i class="icon-question-sign"></i> Perdu</button>'
+      + '<button type="button" class="inv-btn inv-btn-danger inv-btn-sm" data-mark="hs"><i class="icon-ban-circle"></i> HS</button>' : '';
+  ivOpen('iv-add-modal');
+}
+document.getElementById('iv-add-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var f = this, it = f.item_id.value ? item(+f.item_id.value) : null, type = f.type.value;
+  var v = { type: type, ref: f.reference.value.trim(), model: f.model.value.trim(), phone: type === 'Téléphone' ? f.phone_number.value.trim() : '',
+    qty: isBulk(type) ? Math.max(1, +f.quantity.value || 1) : 1, notes: f.notes.value.trim() };
+  if (type === 'Ordinateur') {
+    var w = f.win11.checked ? 1 : 0, b = f.battery_changed.checked ? 1 : 0;
+    if (it && it.win11 !== w) log(it, w ? 'win11_on' : 'win11_off');
+    if (it && it.bat !== b) log(it, b ? 'battery_on' : 'battery_off');
+    v.win11 = w; v.bat = b;
+  }
+  if (it) { Object.assign(it, v); toast('Équipement enregistré.'); }
+  else { it = addItem(v); log(it, 'created'); toast('Équipement ajouté au stock.'); }
+  ivClose('iv-add-modal'); render();
+});
+document.getElementById('iv-add-extra').addEventListener('click', function (e) {
+  var b = e.target.closest('[data-mark]'); if (!b) return;
+  var st = b.dataset.mark, it = item(+document.getElementById('iv-add-form').item_id.value);
+  if (!confirm(st === 'lost' ? 'Marquer cet ordinateur comme perdu ?' : 'Marquer cet ordinateur comme hors service ?')) return;
+  markLostOrHs(it, st); ivClose('iv-add-modal'); toast(st === 'lost' ? 'Marqué perdu.' : 'Marqué hors service.'); render();
+});
+
+var PM = null; // { mode: 'assign'|'reserve'|'reassign', id }
+function openPerson(mode, id, label) {
+  PM = { mode: mode, id: id };
+  document.getElementById('iv-person-title').textContent = { assign: 'Attribuer à une personne', reserve: 'Mettre en réservation', reassign: 'Réaffecter' }[mode];
+  document.getElementById('iv-person-label').textContent = label;
+  document.getElementById('iv-person-lbl').textContent = { assign: 'Personne *', reserve: 'Nom de la personne', reassign: 'Nouvelle personne *' }[mode];
+  document.getElementById('iv-person-help').style.display = mode === 'reassign' ? '' : 'none';
+  var sb = document.getElementById('iv-person-submit');
+  sb.className = 'inv-btn ' + (mode === 'assign' ? 'inv-btn-primary' : 'inv-btn-orange');
+  sb.innerHTML = { assign: '<i class="icon-user"></i> Attribuer', reserve: '<i class="icon-bookmark"></i> Réserver', reassign: '<i class="icon-share"></i> Réaffecter' }[mode];
+  document.getElementById('iv-person-sel').innerHTML = '<option value="">— Sélectionner —</option>' + personNames().map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '<option value="__new__">+ Nouvelle personne…</option>';
+  var nw = document.getElementById('iv-person-new'); nw.value = ''; nw.classList.add('iv-hidden');
+  ivOpen('iv-person-modal');
+  setTimeout(function () { document.getElementById('iv-person-sel').focus(); }, 60);
+}
+window.ivSyncPerson = function () { document.getElementById('iv-person-new').classList.toggle('iv-hidden', document.getElementById('iv-person-sel').value !== '__new__'); };
+function itemLabel(it) { return [it.type, it.ref, it.model].filter(Boolean).join(' · '); }
+document.getElementById('iv-person-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var sel = document.getElementById('iv-person-sel').value, name = (sel === '__new__' ? document.getElementById('iv-person-new').value : sel).trim();
+  if (!name) { alert(PM.mode === 'reassign' ? 'Veuillez sélectionner ou saisir la nouvelle personne.' : 'Veuillez sélectionner ou saisir une personne.'); return; }
+  if (PM.mode === 'assign') { assignToPerson(item(PM.id), name); toast('Attribué à ' + name + '.'); }
+  else if (PM.mode === 'reserve') { reserveItem(item(PM.id), name); toast('Réservé pour ' + name + '.'); }
+  else {
+    var p = post(PM.id), old = p.person;
+    itemsOfPost(p.id).forEach(function (it) { log(it, 'reassigned', name, old ? 'Ancien titulaire : ' + old : ''); });
+    p.person = name; ivClose('iv-post-modal'); toast('Poste réaffecté à ' + name + '.');
+  }
+  ivClose('iv-person-modal'); render(); if (openPostId && post(openPostId)) openPost(openPostId);
+});
+
+document.getElementById('iv-edit-post-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var p = post(+document.getElementById('iv-ep-id').value);
+  p.name = document.getElementById('iv-ep-name').value.trim() || p.name; p.person = document.getElementById('iv-ep-person').value.trim();
+  ivClose('iv-edit-post-modal'); toast('Poste enregistré.'); render();
+});
+document.getElementById('iv-note-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var it = item(+document.getElementById('iv-note-item-id').value), n = document.getElementById('iv-note-textarea').value.trim();
+  if (n !== it.notes) { it.notes = n; log(it, n ? 'note_added' : 'note_cleared', '', n); }
+  ivClose('iv-note-modal'); toast('Note enregistrée.'); render(); if (openPostId && post(openPostId)) openPost(openPostId);
+});
+
+var openPostId = null;
+function openPost(pid) {
+  var p = post(pid); if (!p) return; openPostId = pid;
+  var its = itemsOfPost(pid), order = ['Téléphone', 'Écran', 'Ordinateur', 'Câble', 'Souris', 'Casque', 'Clavier'], grouped = {};
+  its.forEach(function (it) { (grouped[it.type] = grouped[it.type] || []).push(it); });
+  var npc = (grouped['Ordinateur'] || []).length;
+  var h = '<div class="inv-modal-header"><div><h3>' + esc(p.name) + '</h3>'
+    + (p.person ? '<p style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><span><i class="icon-user" style="margin-right:5px;opacity:.5;"></i><strong>' + esc(p.person) + '</strong></span>'
+      + (npc >= 2 ? '<span class="inv-badge inv-badge-red"><i class="icon-warning-sign" style="font-size:11px;"></i> ' + npc + ' ordinateurs</span>' : '')
+      + '<button type="button" class="inv-btn inv-btn-ghost inv-btn-xs" data-reassign="' + pid + '"><i class="icon-share"></i> Réaffecter</button></p>' : '')
+    + '</div><button class="inv-modal-close" onclick="ivClose(\'iv-post-modal\')">✕</button></div><div class="inv-modal-body">';
+  if (!its.length) h += '<p style="text-align:center;color:rgba(1,25,115,.4);padding:30px 0;">Aucun équipement attribué</p>';
+  order.forEach(function (t) {
+    var g = grouped[t]; if (!g) return;
+    h += '<div class="iv-detail-section"><div class="iv-detail-type">' + esc(t) + ' (' + g.length + ')</div>';
+    g.forEach(function (it) {
+      h += '<div class="iv-detail-row"><div class="iv-detail-info">' + esc([it.ref, it.model].filter(Boolean).join(' · ') || '—')
+        + (t === 'Téléphone' && it.phone ? '<span class="iv-detail-phone">' + esc(it.phone) + '</span>' : '')
+        + (it.notes ? '<span class="iv-detail-note">' + esc(it.notes) + '</span>' : '') + '</div><div style="display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;">';
+      if (t === 'Ordinateur') {
+        h += '<label style="display:flex;align-items:center;gap:5px;font-size:13px;color:rgba(1,25,115,.55);cursor:pointer;white-space:nowrap;"><input type="checkbox" data-w11="' + it.id + '"' + (it.win11 ? ' checked' : '') + '> Win 11</label>'
+          + '<label style="display:flex;align-items:center;gap:5px;font-size:13px;color:rgba(1,25,115,.55);cursor:pointer;white-space:nowrap;"><input type="checkbox" data-bat="' + it.id + '"' + (it.bat ? ' checked' : '') + '> Batterie</label>'
+          + '<button type="button" class="inv-icon-btn" title="Marquer la maintenance effectuée aujourd\'hui" data-maint="' + it.id + '"><i class="icon-wrench"></i></button>'
+          + '<span style="font-size:12.5px;white-space:nowrap;color:rgba(1,25,115,.4);">' + (it.maint ? fdate(it.maint) : 'Jamais maintenu') + '</span>' + noteBtn(it);
+      }
+      h += '<button type="button" class="inv-btn inv-btn-ghost inv-btn-xs" data-unassign="' + it.id + '"><i class="icon-inbox"></i> Stock</button></div></div>';
+      if (t === 'Ordinateur') {
+        var hist = DB.logs.filter(function (l) { return l.item_id === it.id; }).sort(function (a, b) { return b.t - a.t; });
+        h += '<div class="iv-history-label"><i class="icon-list-alt"></i> Historique' + (hist.length ? ' (' + hist.length + ')' : '') + '</div><ul class="iv-history-list">'
+          + (hist.length ? hist.map(function (l) {
+            return '<li><span><span class="iv-h-action">' + esc(ACTIONS[l.action]) + '</span>' + (l.person ? '<span class="iv-h-person"> — ' + esc(l.person) + '</span>' : '')
+              + (l.staff ? '<span class="iv-h-staff"> (par ' + esc(l.staff) + ')</span>' : '') + '</span><span class="iv-h-date">' + fdt(l.t) + '</span></li>';
+          }).join('') : '<li class="iv-history-empty">Aucun événement enregistré pour cet ordinateur.</li>') + '</ul>';
+      }
+    });
+    h += '</div>';
+  });
+  h += '</div><div class="inv-modal-footer"><div class="inv-modal-footer-left"><button type="button" class="inv-btn inv-btn-danger inv-btn-sm" data-delpost="' + pid + '"><i class="icon-trash"></i> Supprimer le poste</button></div>'
+    + '<button class="inv-btn inv-btn-ghost" onclick="ivClose(\'iv-post-modal\')">Fermer</button></div>';
+  document.getElementById('iv-post-box').innerHTML = h;
+  ivOpen('iv-post-modal');
+}
+
+/* ── Événements (délégués) ───────────────────────────────────────────── */
+function refresh() { render(); if (document.getElementById('iv-post-modal').classList.contains('iv-open') && openPostId && post(openPostId)) openPost(openPostId); else if (openPostId && !post(openPostId)) ivClose('iv-post-modal'); }
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-tab],[data-type],[data-add],[data-edit],[data-del],[data-assign],[data-reserve],[data-maint],[data-note],[data-post],[data-editpost],[data-delpost],[data-fromres],[data-unres],[data-relist],[data-unassign],[data-reassign],[data-export],[data-gclear],[data-qclear],[data-aqclear],[data-hclear],[data-open]');
+  if (!t) return;
+  var d = t.dataset;
+  if (t.tagName === 'A' || t.tagName === 'BUTTON') e.preventDefault();
+  if (d.tab) { S.tab = d.tab; render(); }
+  else if (d.type !== undefined && t.classList.contains('inv-pill')) { S.type = d.type; render(); }
+  else if (d.add) openAdd(null);
+  else if (d.edit) openAdd(item(+d.edit));
+  else if (d.del) { if (confirm('Supprimer cet équipement définitivement ?')) { var it = item(+d.del); log(it, 'deleted'); DB.items = DB.items.filter(function (x) { return x !== it; }); toast('Équipement supprimé.'); render(); } }
+  else if (d.assign) { var a = item(+d.assign); openPerson('assign', a.id, itemLabel(a)); }
+  else if (d.reserve) { var r = item(+d.reserve); openPerson('reserve', r.id, itemLabel(r)); }
+  else if (d.maint) { var m = item(+d.maint); m.maint = ymd(new Date()); log(m, 'maintenance'); toast('Maintenance enregistrée pour ' + (m.ref || 'cet ordinateur') + '.'); refresh(); }
+  else if (d.note) { var n = item(+d.note); document.getElementById('iv-note-item-id').value = n.id; document.getElementById('iv-note-textarea').value = n.notes; ivOpen('iv-note-modal'); setTimeout(function () { document.getElementById('iv-note-textarea').focus(); }, 60); }
+  else if (d.editpost) { var p = post(+d.editpost); document.getElementById('iv-ep-id').value = p.id; document.getElementById('iv-ep-name').value = p.name; document.getElementById('iv-ep-person').value = p.person; ivOpen('iv-edit-post-modal'); }
+  else if (d.delpost) { if (confirm('Supprimer le poste et remettre tous les équipements en stock ?')) { itemsOfPost(+d.delpost).forEach(unassign); ivClose('iv-post-modal'); toast('Poste supprimé, équipements remis en stock.'); render(); } }
+  else if (d.fromres) { var fr = item(+d.fromres), who = DB.reserv[fr.id]; if (confirm('Attribuer cet équipement à ' + who + ' ?')) { assignToPerson(fr, who); toast('Attribué à ' + who + '.'); render(); } }
+  else if (d.unres) { unreserve(item(+d.unres)); toast('Remis en stock.'); render(); }
+  else if (d.relist) { var rl = item(+d.relist); rl.state = 'stock'; log(rl, 'relisted'); toast('Remis en stock.'); render(); }
+  else if (d.unassign) { unassign(item(+d.unassign)); toast('Remis en stock.'); refresh(); }
+  else if (d.reassign) openPerson('reassign', +d.reassign, 'Actuellement : ' + post(+d.reassign).person);
+  else if (d.export) toast('Démo : l\'export .xls des ordinateurs n\'est pas disponible ici.');
+  else if (d.gclear) { S.g = ''; render(); }
+  else if (d.qclear) { S.q = ''; render(); }
+  else if (d.aqclear) { S.aq = ''; document.getElementById('iv-assigned-search').value = ''; filterAssigned(''); }
+  else if (d.hclear) { S.hq = S.hp = S.ha = ''; render(); }
+  else if (d.open) {
+    if (e.target.closest('[data-stop]')) return;
+    var o = item(+d.open), op = postOf(o);
+    if (o.state === 'stock') openAdd(o);
+    else if (o.state === 'assigned' && op) openPost(op.id);
+    else { S.g = ''; S.tab = o.state === 'reserved' ? 'reserved' : 'lost'; S.focus = o.id; render(); }
+  }
+  else if (d.post) { if (e.target.closest('[data-stop]') && !t.closest('[data-stop]')) return; openPost(+d.post); }
+});
+document.addEventListener('change', function (e) {
+  var t = e.target, id;
+  if ((id = t.dataset.w11)) { var it = item(+id); it.win11 = t.checked ? 1 : 0; log(it, t.checked ? 'win11_on' : 'win11_off'); refresh(); }
+  else if ((id = t.dataset.bat)) { var b = item(+id); b.bat = t.checked ? 1 : 0; log(b, t.checked ? 'battery_on' : 'battery_off'); refresh(); }
+});
+document.addEventListener('input', function (e) { if (e.target.id === 'iv-assigned-search') { S.aq = e.target.value; filterAssigned(S.aq); } });
+document.addEventListener('submit', function (e) {
+  var f = e.target;
+  if (f.id === 'iv-g-form') { e.preventDefault(); S.g = document.getElementById('iv-g').value.trim(); render(); }
+  else if (f.id === 'iv-stock-q') { e.preventDefault(); S.q = document.getElementById('iv-q').value.trim(); render(); }
+  else if (f.id === 'iv-h-form') { e.preventDefault(); S.hq = document.getElementById('iv-hq').value.trim(); S.hp = document.getElementById('iv-hp').value.trim(); S.ha = document.getElementById('iv-ha').value; render(); }
+});
+
+if (/[#&]tab=(\w+)/.test(location.hash)) S.tab = RegExp.$1;
+render();
+})();
+</script></body></html>
