@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Démo — RGPD (osTicket)</title>
+<link rel="stylesheet" href="vendor/font-awesome.min.css">
+<style>
+:root{--blue:rgb(1,25,115);--orange:rgb(254,67,41);--bg:#f4f6fb;--border:rgba(1,25,115,.13);--muted:rgba(1,25,115,.55);--udaf-blue:rgb(1,25,115);--udaf-orange:rgb(254,67,41);--udaf-white:#fff;--udaf-radius:14px;--udaf-shadow:0 4px 18px rgba(1,25,115,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--blue);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px}
+.demo{background:var(--orange);color:#fff;text-align:center;font-size:12px;font-weight:700;padding:5px}
+header{background:var(--blue);color:#fff;display:flex;align-items:center;padding:0 24px;gap:22px;flex-wrap:wrap}
+.logo{font-size:19px;font-weight:800;letter-spacing:1px;padding:13px 0}.logo b{color:var(--orange)}
+header nav{display:flex;gap:2px;flex-wrap:wrap}header nav a{color:#fff;opacity:.8;text-decoration:none;padding:15px 13px;font-weight:600;font-size:13.5px;border-bottom:3px solid transparent}
+header nav a.on{opacity:1;border-color:var(--orange)}.who{margin-left:auto;font-size:13px;opacity:.9}
+.sub{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:4px;flex-wrap:wrap}
+.sub a{color:var(--muted);text-decoration:none;padding:10px 12px;font-size:13px;font-weight:600;border-bottom:2px solid transparent}
+.sub a.on{color:var(--blue);border-color:var(--orange)}
+.wrap{max-width:1240px;margin:20px auto;padding:0 18px}
+.button{border:0;border-radius:8px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--blue);color:#fff;white-space:nowrap}
+.button:hover{opacity:.9}.button.danger{background:var(--orange)}
+.hint{background:rgba(254,67,41,.08);border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:14px;max-width:720px}
+.hint code{background:#fff;border-radius:5px;padding:1px 6px;cursor:pointer}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0a6040;color:#fff;padding:10px 20px;border-radius:50px;font-weight:700;font-size:13px;opacity:0;transition:.25s;pointer-events:none}.toast.show{opacity:1}
+a.tk{color:var(--blue);font-weight:700}
+/* Styles repris de include/staff/gdpr-main.inc.php */
+.gdpr-header { margin-bottom: 18px; }
+.gdpr-header h1 { margin: 0 0 4px; color: var(--udaf-blue); font-size: 1.6rem; }
+.gdpr-header p { margin: 0; color: rgba(1,25,115,.55); font-size: 0.88rem; max-width: 780px; line-height: 1.5; }
+.gdpr-card { background: var(--udaf-white); border-radius: var(--udaf-radius); box-shadow: var(--udaf-shadow); padding: 20px; margin-bottom: 20px; max-width: 720px; }
+.gdpr-search-row { display: flex; gap: 10px; }
+.gdpr-search-row input[type="text"] { flex: 1; min-width: 0; border: 1px solid rgba(1,25,115,.15); border-radius: 8px; padding: 9px 12px; font: inherit; color: var(--blue); }
+.gdpr-flash { padding: 12px 16px; border-radius: 10px; margin-bottom: 18px; font-size: 0.88rem; max-width: 720px; line-height: 1.5; }
+.gdpr-flash-err { background: rgba(214,69,69,.1); color: #d64545; }
+.gdpr-flash-msg { background: rgba(31,157,85,.1); color: #1f9d55; }
+.gdpr-preview-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(1,25,115,.06); font-size: 0.88rem; }
+.gdpr-preview-row span:first-child { color: rgba(1,25,115,.5); }
+.gdpr-preview-row span:last-child { color: var(--udaf-blue); font-weight: 600; text-align: right; }
+.gdpr-warning { background: rgba(254,67,41,.08); border: 1px solid rgba(254,67,41,.25); border-radius: 10px; padding: 14px 16px; margin: 16px 0; font-size: 0.85rem; color: rgba(1,25,115,.8); line-height: 1.55; }
+.gdpr-warning strong { color: var(--udaf-orange); }
+.gdpr-confirm-row { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0; font-size: 0.88rem; }
+.gdpr-log-table { width: 100%; border-collapse: collapse; }
+.gdpr-log-table th, .gdpr-log-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(1,25,115,.06); font-size: 0.82rem; }
+.gdpr-log-table th { color: var(--udaf-blue); background: rgba(1,25,115,.05); }
+.tbl-scroll{overflow-x:auto}
+.ret-stats{display:flex;gap:24px;flex-wrap:wrap;margin:12px 0 16px;font-size:0.88rem}
+.ret-stats span{color:rgba(1,25,115,.5)}
+@media(max-width:600px){header{padding:0 14px}.sub{padding:0 14px}.wrap{padding:0 14px}.gdpr-search-row{flex-direction:column}}
+</style></head><body>
+<div class="demo">DÉMONSTRATION — page RGPD du panneau agent · usagers et tickets fictifs, aucune donnée réelle</div>
+<header><div class="logo">UDAF <b>47</b> · Agents</div>
+<nav><a href="ticketing-admin.html">Tickets</a><a href="#" onclick="return false">Utilisateurs</a><a href="#" onclick="return false">Inventaire</a><a href="#" onclick="return false">Serveurs</a><a href="#" class="on" onclick="return false">Autres outils</a></nav>
+<div class="who"><i class="icon-user"></i> Paolo S. · Admin</div></header>
+<div class="sub"><a href="#" onclick="return false">Annuaire mobile</a><a href="#" onclick="return false">Statistiques</a><a href="#" onclick="return false">Audit</a><a href="#" class="on" onclick="return false">RGPD</a><a href="#" onclick="return false">Sessions</a></div>
+<div class="wrap" id="root"></div><div class="toast" id="toast"></div>
+<script>
+var NOW = new Date();
+function d(daysAgo, h) { var x = new Date(NOW.getTime() - daysAgo * 864e5); if (h != null) x.setHours(h, 12, 0, 0); return x; }
+function fmt(x, time) { var p = function (n) { return (n < 10 ? '0' : '') + n; }; return p(x.getDate()) + '/' + p(x.getMonth() + 1) + '/' + x.getFullYear() + (time ? ' ' + p(x.getHours()) + ':' + p(x.getMinutes()) : ''); }
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function mask(e) { var i = e.indexOf('@'); if (i < 1) return '***'; var dom = e.slice(i + 1).split('.'), tld = dom.pop(); return e[0] + '***@' + dom.join('.').charAt(0) + '***.' + tld; }
+
+var USERS = [
+  { id: 1, name: 'Julien Marchand', email: 'j.marchand@exemple.fr', tickets: 7, account: true, entries: 18, answers: 3, dir: true },
+  { id: 2, name: 'Sophie Lemaire', email: 's.lemaire@exemple.fr', tickets: 4, account: true, entries: 9, answers: 2, dir: true },
+  { id: 3, name: 'Marc Petit', email: 'm.petit@exemple.fr', tickets: 2, account: false, entries: 5, answers: 1, dir: true },
+  { id: 4, name: 'Ancien Stagiaire', email: 'stagiaire.2023@exemple.fr', tickets: 1, account: true, entries: 3, answers: 1, dir: false }
+];
+var ELIGIBLE = [];
+for (var i = 0; i < 6; i++) ELIGIBLE.push({ number: 412870 + i * 7, closed: fmt(d(1095 + 8 + i * 23)), entries: 2 + (i * 3) % 5, attachments: i % 3 === 0 ? 1 : 0, user: i === 2 });
+var RETDONE = 214, RETLAST = { at: d(0, 3), count: 3 };
+var RETLOG = [
+  { created: d(0, 3), number: 412811, closed: fmt(d(1096)), user: false },
+  { created: d(0, 3), number: 412806, closed: fmt(d(1097)), user: true },
+  { created: d(0, 3), number: 412799, closed: fmt(d(1099)), user: false },
+  { created: d(1, 3), number: 412790, closed: fmt(d(1101)), user: false }
+];
+var LOG = [
+  { created: d(41, 10), masked: 'c***@e***.fr', tickets: 5, staff: 'Arnaud A.' },
+  { created: d(118, 15), masked: 'l***@g***.com', tickets: 1, staff: 'Paolo S.' }
+];
+var S = { q: '', preview: null, flash: null, retPreview: null };
+
+function toast(m) { var t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('show'); }, 2400); }
+
+function render() {
+  var u = S.preview, h = '';
+  h += '<div class="gdpr-header"><h1>RGPD — Droit à l\'effacement</h1><p>Recherchez un usager par email pour anonymiser définitivement ses données personnelles (nom, email, téléphone, compte de connexion). Les tickets sont conservés, mais vidés de toute information identifiante — voir l\'avertissement avant confirmation pour le détail exact de ce qui est et n\'est pas effacé.</p></div>';
+  if (S.flash) h += '<div class="gdpr-flash gdpr-flash-' + S.flash[0] + '">' + esc(S.flash[1]) + '</div>';
+  h += '<div class="hint">💡 Essayez avec un usager fictif : ' + USERS.map(function (x) { return '<code data-mail="' + esc(x.email) + '">' + esc(x.email) + '</code>'; }).join(' ') + '</div>';
+  h += '<div class="gdpr-card"><form class="gdpr-search-row" id="f-search"><input type="text" id="q" placeholder="Email de l\'usager…" value="' + esc(S.q) + '"><button type="submit" class="button"><i class="icon-search"></i> Rechercher</button></form>';
+  if (u) {
+    h += '<div style="margin-top:18px;">'
+      + '<div class="gdpr-preview-row"><span>Nom</span><span>' + esc(u.name) + '</span></div>'
+      + '<div class="gdpr-preview-row"><span>Email</span><span>' + esc(u.email) + '</span></div>'
+      + '<div class="gdpr-preview-row"><span>Tickets</span><span>' + u.tickets + '</span></div>'
+      + '<div class="gdpr-preview-row"><span>Compte de connexion</span><span>' + (u.account ? 'Oui' : 'Non') + '</span></div></div>'
+      + '<div class="gdpr-warning"><strong>Action irréversible.</strong> En confirmant :<br>'
+      + '• Le nom et l\'email de cet usager seront remplacés par des valeurs anonymes sur tout son historique.<br>'
+      + '• Son compte de connexion sera supprimé (il ne pourra plus se connecter avec cette adresse).<br>'
+      + '• Son numéro de téléphone et les autres champs de profil seront vidés.<br>'
+      + '• Son entrée dans l\'annuaire mobile (email → nom) sera supprimée — <strong>mais réapparaîtra au prochain import CSV si l\'email est toujours présent dans l\'export Microsoft 365 source</strong> ; pensez à le retirer de la source si l\'effacement doit être durable.<br>'
+      + '• Les tickets et le contenu de ses messages sont <strong>conservés</strong> (seul le nom affiché change) — le texte des messages eux-mêmes n\'est pas modifié automatiquement.</div>'
+      + '<form id="f-anon"><div class="gdpr-confirm-row"><input type="checkbox" id="gdpr-confirm"><label for="gdpr-confirm">Je confirme avoir vérifié l\'identité de la demande et souhaite anonymiser cet usager.</label></div>'
+      + '<button type="submit" class="button danger"><i class="icon-trash"></i> Anonymiser définitivement</button></form>';
+  }
+  h += '</div>';
+
+  h += '<div class="gdpr-card" style="max-width:none;"><h2 style="margin-top:0;color:var(--udaf-blue);font-size:1.05rem;">Conservation limitée — anonymisation des tickets après 3 ans</h2>'
+    + '<p style="color:rgba(1,25,115,.6);font-size:0.85rem;line-height:1.55;max-width:820px;">Chaque jour, les tickets <strong>clôturés depuis plus de 3 ans</strong> (sans activité depuis) sont anonymisés automatiquement, par lots de 100 : contenu de tous les messages et notes, pièces jointes, sujet et champs texte, IP, copies (CC) et nom de l\'usager dans l\'historique. Le numéro, les dates, le statut, la catégorie, le département et l\'agent sont conservés pour les statistiques. Si l\'usager n\'a plus aucun ticket récent, ne s\'est pas connecté depuis 3 ans et n\'est plus dans l\'annuaire, sa fiche est anonymisée aussi.</p>'
+    + '<div class="ret-stats"><div><span>En attente :</span> <strong>' + ELIGIBLE.length + ' ticket(s)</strong></div><div><span>Déjà anonymisés :</span> <strong>' + RETDONE + '</strong></div><div><span>Dernier passage :</span> <strong>' + (RETLAST ? fmt(RETLAST.at, true) + ' (' + RETLAST.count + ')' : 'jamais') + '</strong></div></div>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;"><button type="button" class="button" id="b-prev"><i class="icon-eye-open"></i> Aperçu du prochain lot</button>';
+  if (ELIGIBLE.length) h += '<form id="f-ret" style="margin:0;display:flex;align-items:center;gap:10px;"><label style="font-size:0.85rem;display:flex;align-items:center;gap:6px;"><input type="checkbox" id="ret-confirm"> Je confirme</label><button type="submit" class="button danger"><i class="icon-trash"></i> Lancer maintenant</button></form>';
+  h += '</div>';
+  if (S.retPreview) {
+    h += '<div style="margin-top:16px;">';
+    if (!S.retPreview.length) h += '<p style="color:rgba(1,25,115,.4);font-size:0.85rem;">Aucun ticket éligible pour le moment.</p>';
+    else h += '<div class="tbl-scroll"><table class="gdpr-log-table"><tr><th>Ticket</th><th>Clôturé le</th><th>Messages</th><th>Pièces jointes</th><th>Usager anonymisé aussi</th></tr>'
+      + S.retPreview.map(function (r) { return '<tr><td><a class="tk" href="#" onclick="return false">#' + r.number + '</a></td><td>' + r.closed + '</td><td>' + r.entries + '</td><td>' + r.attachments + '</td><td>' + (r.user ? 'Oui' : 'Non') + '</td></tr>'; }).join('') + '</table></div>';
+    h += '</div>';
+  }
+  if (RETLOG.length) h += '<h3 style="color:var(--udaf-blue);font-size:0.95rem;margin:20px 0 6px;">Derniers tickets anonymisés</h3><div class="tbl-scroll"><table class="gdpr-log-table"><tr><th>Date</th><th>Ticket</th><th>Clôturé le</th><th>Usager anonymisé</th></tr>'
+    + RETLOG.slice(0, 8).map(function (r) { return '<tr><td>' + fmt(r.created, true) + '</td><td><a class="tk" href="#" onclick="return false">#' + r.number + '</a></td><td>' + r.closed + '</td><td>' + (r.user ? 'Oui' : 'Non') + '</td></tr>'; }).join('') + '</table></div>';
+  h += '</div>';
+
+  h += '<div class="gdpr-card" style="max-width:none;"><h2 style="margin-top:0;color:var(--udaf-blue);font-size:1.05rem;">Journal des effacements</h2>';
+  if (!LOG.length) h += '<p style="color:rgba(1,25,115,.4);font-size:0.85rem;">Aucun effacement effectué pour le moment.</p>';
+  else h += '<div class="tbl-scroll"><table class="gdpr-log-table"><tr><th>Date</th><th>Email (masqué)</th><th>Tickets conservés</th><th>Effectué par</th></tr>'
+    + LOG.map(function (r) { return '<tr><td>' + fmt(r.created, true) + '</td><td>' + esc(r.masked) + '</td><td>' + r.tickets + '</td><td>' + esc(r.staff) + '</td></tr>'; }).join('') + '</table></div>';
+  h += '</div>';
+
+  document.getElementById('root').innerHTML = h;
+  bind();
+}
+
+function search(q) {
+  S.q = q.trim(); S.flash = null; S.preview = null;
+  if (!S.q) S.flash = ['err', 'Veuillez saisir un email.'];
+  else {
+    var u = USERS.filter(function (x) { return x.email.toLowerCase() === S.q.toLowerCase(); })[0];
+    if (u) S.preview = u; else S.flash = ['err', 'Aucun usager trouvé pour cet email.'];
+  }
+  render();
+}
+
+function bind() {
+  [].forEach.call(document.querySelectorAll('.hint code'), function (c) { c.onclick = function () { search(c.dataset.mail); }; });
+  document.getElementById('f-search').onsubmit = function (e) { e.preventDefault(); search(document.getElementById('q').value); };
+  var fa = document.getElementById('f-anon');
+  if (fa) fa.onsubmit = function (e) {
+    e.preventDefault();
+    var u = S.preview;
+    if (!document.getElementById('gdpr-confirm').checked) { S.flash = ['err', 'Confirmation requise avant anonymisation.']; render(); return; }
+    if (!confirm('Confirmer l\'anonymisation définitive de cet usager ?')) return;
+    USERS = USERS.filter(function (x) { return x.id !== u.id; });
+    LOG.unshift({ created: new Date(), masked: mask(u.email), tickets: u.tickets, staff: 'Paolo S.' });
+    S.flash = ['msg', 'Usager anonymisé : ' + u.tickets + ' ticket(s) conservé(s) (historique anonymisé), ' + (u.tickets + 1) + ' adresse(s) email modifiée(s), ' + u.answers + ' réponse(s) de profil vidée(s), ' + u.entries + ' message(s) nettoyé(s), compte de connexion ' + (u.account ? 'supprimé' : 'absent') + ', entrée d\'annuaire mobile ' + (u.dir ? 'supprimée' : 'absente') + '.'];
+    S.preview = null; S.q = '';
+    render(); toast('Usager anonymisé (démo)');
+  };
+  document.getElementById('b-prev').onclick = function () { S.flash = null; S.retPreview = ELIGIBLE.slice(0, 100); render(); };
+  var fr = document.getElementById('f-ret');
+  if (fr) fr.onsubmit = function (e) {
+    e.preventDefault();
+    if (!document.getElementById('ret-confirm').checked) { S.flash = ['err', 'Confirmation requise avant anonymisation.']; render(); return; }
+    if (!confirm('Anonymiser définitivement le prochain lot de tickets ? Action irréversible.')) return;
+    var batch = ELIGIBLE.splice(0, 100), users = batch.filter(function (r) { return r.user; }).length, now = new Date();
+    batch.forEach(function (r) { RETLOG.unshift({ created: now, number: r.number, closed: r.closed, user: r.user }); });
+    RETDONE += batch.length; RETLAST = { at: now, count: batch.length };
+    S.retPreview = null;
+    S.flash = ['msg', 'Conservation 3 ans : ' + batch.length + ' ticket(s) anonymisé(s), dont ' + users + ' usager(s) anonymisé(s) aussi.'];
+    render(); toast('Lot anonymisé (démo)');
+  };
+}
+render();
+</script></body></html>
